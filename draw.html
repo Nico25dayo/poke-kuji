@@ -160,6 +160,7 @@
   </main>
 
   <script src="champions-ma.js"></script>
+<script src="champions-mb.js"></script>
 
   <script>
     const params = new URLSearchParams(window.location.search);
@@ -170,17 +171,21 @@
     document.getElementById("gameName").textContent = game;
     document.getElementById("ruleName").textContent = rule;
 
-    function getPokemonPool() {
+   function getPokemonPool() {
 
-      if (
-        game === "Pokémon Champions" &&
-        rule === "レギュレーション M-A"
-      ) {
-        return championsMA;
-      }
+  if (game === "Pokémon Champions") {
 
-      return [];
+    if (rule === "レギュレーション M-A") {
+      return championsMA;
     }
+
+    if (rule === "レギュレーション M-B") {
+      return championsMB;
+    }
+  }
+
+  return [];
+}
 
     function drawPokemon() {
 
