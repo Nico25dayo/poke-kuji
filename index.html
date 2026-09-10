@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#ef5350">
   <title>ポケくじ</title>
 
   <style>
@@ -13,61 +14,109 @@
     body {
       margin: 0;
       min-height: 100vh;
-      font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif;
-      background: #f7f7f7;
+      font-family: -apple-system, BlinkMacSystemFont, "Noto Sans JP", sans-serif;
+      background: #f5f6f8;
       color: #222;
-      display: flex;
-      justify-content: center;
-      align-items: center;
     }
 
     .app {
       width: 100%;
-      max-width: 480px;
+      max-width: 520px;
       min-height: 100vh;
-      background: white;
-      padding: 40px 24px;
+      margin: auto;
+      background: #fff;
+      padding: 32px 20px 60px;
+    }
+
+    header {
       text-align: center;
+      margin: 45px 0 45px;
     }
 
     .logo {
-      font-size: 42px;
-      font-weight: 800;
-      margin-top: 80px;
-      margin-bottom: 12px;
+      font-size: 38px;
+      font-weight: 900;
+      margin-bottom: 8px;
     }
 
     .subtitle {
       color: #777;
-      margin-bottom: 60px;
+      font-size: 14px;
     }
 
-    h2 {
+    .section-title {
       font-size: 20px;
-      margin-bottom: 24px;
+      font-weight: 800;
+      margin-bottom: 18px;
     }
 
-    .mode-button {
+    .game-card {
+      width: 100%;
+      border: 1px solid #e5e5e5;
+      border-radius: 18px;
+      background: #fff;
+      margin-bottom: 14px;
+      overflow: hidden;
+      box-shadow: 0 4px 14px rgba(0,0,0,.05);
+    }
+
+    .game-button {
       width: 100%;
       padding: 20px;
-      margin-bottom: 16px;
       border: none;
-      border-radius: 16px;
-      background: #222;
-      color: white;
-      font-size: 18px;
-      font-weight: bold;
+      background: white;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 17px;
+      font-weight: 700;
       cursor: pointer;
     }
 
-    .mode-button:hover {
-      opacity: 0.85;
+    .arrow {
+      transition: transform .2s;
     }
 
-    .note {
-      margin-top: 40px;
-      font-size: 13px;
-      color: #999;
+    .game-card.open .arrow {
+      transform: rotate(180deg);
+    }
+
+    .game-menu {
+      display: none;
+      padding: 0 14px 14px;
+    }
+
+    .game-card.open .game-menu {
+      display: block;
+    }
+
+    .option {
+      width: 100%;
+      padding: 15px;
+      margin-top: 8px;
+      border: none;
+      border-radius: 12px;
+      background: #f3f4f6;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      text-align: left;
+    }
+
+    .option:hover {
+      background: #e9eaed;
+    }
+
+    .coming {
+      opacity: .45;
+    }
+
+    .footer {
+      text-align: center;
+      margin-top: 45px;
+      font-size: 12px;
+      color: #aaa;
+      line-height: 1.7;
     }
   </style>
 </head>
@@ -76,33 +125,98 @@
 
   <main class="app">
 
-    <div class="logo">🎲 ポケくじ</div>
+    <header>
+      <div class="logo">🎲 ポケくじ</div>
+      <div class="subtitle">
+        ランダムから始まる、いつもと違うバトル。
+      </div>
+    </header>
 
-    <p class="subtitle">
-      ポケモンバトルを、もっと自由に。
-    </p>
+    <div class="section-title">
+      ゲームを選択
+    </div>
 
-    <h2>どのルールで遊ぶ？</h2>
+    <!-- Champions -->
+    <div class="game-card">
 
-    <button class="mode-button" onclick="selectMode('Champions')">
-      Pokémon Champions
-    </button>
+      <button class="game-button" onclick="toggleMenu(this)">
+        <span>Pokémon Champions</span>
+        <span class="arrow">▼</span>
+      </button>
 
-    <button class="mode-button" onclick="selectMode('SV')">
-      Pokémon Scarlet / Violet
-    </button>
+      <div class="game-menu">
 
-    <p class="note">
-      ランダムにポケモンを選んで<br>
-      自分だけのバトルに挑戦しよう！
-    </p>
+        <button class="option" onclick="selectGame('Champions', 'M-C')">
+          レギュレーション M-C
+        </button>
+
+      </div>
+    </div>
+
+
+    <!-- Main Series -->
+    <div class="game-card">
+
+      <button class="game-button" onclick="toggleMenu(this)">
+        <span>ゲームシリーズ</span>
+        <span class="arrow">▼</span>
+      </button>
+
+      <div class="game-menu">
+
+        <button class="option" onclick="selectGame('SV', 'current')">
+          スカーレット・バイオレット
+        </button>
+
+        <button class="option coming" disabled>
+          ソード・シールド　― 今後対応予定
+        </button>
+
+      </div>
+    </div>
+
+
+    <div class="footer">
+      ※非公式のファン向けツールです。<br>
+      各ゲームの権利は各権利者に帰属します。
+    </div>
 
   </main>
 
+
   <script>
-    function selectMode(mode) {
-      alert(mode + "モードを選択しました！");
+
+    function toggleMenu(button) {
+
+      const card = button.parentElement;
+
+      card.classList.toggle("open");
+
     }
+
+
+    function selectGame(game, regulation) {
+
+      if (game === "Champions") {
+
+        alert(
+          "Pokémon Champions\n" +
+          "レギュレーション " + regulation +
+          " を選択しました！"
+        );
+
+      }
+
+      if (game === "SV") {
+
+        alert(
+          "スカーレット・バイオレットを選択しました！"
+        );
+
+      }
+
+    }
+
   </script>
 
 </body>
