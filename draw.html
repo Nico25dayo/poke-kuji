@@ -161,7 +161,7 @@
 
   <script src="champions-ma.js"></script>
 <script src="champions-mb.js"></script>
-
+<script src="champions-mc.js"></script>
   <script>
     const params = new URLSearchParams(window.location.search);
 
@@ -181,6 +181,10 @@
 
     if (rule === "レギュレーション M-B") {
       return championsMB;
+    }
+
+    if (rule === "レギュレーション M-C") {
+      return championsMC;
     }
   }
 
