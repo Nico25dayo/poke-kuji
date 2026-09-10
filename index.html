@@ -300,21 +300,21 @@
     }
 
 
-    function goToDraw() {
+   function goToDraw() {
 
-      if (!selectedGame) {
-        return;
-      }
+  if (!selectedGame) {
+    return;
+  }
 
-      alert(
-        selectedGame +
-        "\n" +
-        selectedRule +
-        "\n\n" +
-        "次の段階で、ここから6匹抽選できるようにします！"
-      );
+  const url =
+    "draw.html?game=" +
+    encodeURIComponent(selectedGame) +
+    "&rule=" +
+    encodeURIComponent(selectedRule);
 
-    }
+  window.location.href = url;
+
+}
 
   </script>
 
