@@ -42,6 +42,7 @@
     .subtitle {
       color: #777;
       font-size: 14px;
+      line-height: 1.7;
     }
 
     .section-title {
@@ -57,14 +58,14 @@
       background: #fff;
       margin-bottom: 14px;
       overflow: hidden;
-      box-shadow: 0 4px 14px rgba(0,0,0,.05);
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.05);
     }
 
     .game-button {
       width: 100%;
       padding: 20px;
       border: none;
-      background: white;
+      background: #fff;
       display: flex;
       justify-content: space-between;
       align-items: center;
@@ -73,8 +74,12 @@
       cursor: pointer;
     }
 
+    .game-button:hover {
+      background: #fafafa;
+    }
+
     .arrow {
-      transition: transform .2s;
+      transition: transform 0.2s ease;
     }
 
     .game-card.open .arrow {
@@ -108,7 +113,49 @@
     }
 
     .coming {
-      opacity: .45;
+      opacity: 0.45;
+      cursor: not-allowed;
+    }
+
+    .selected-box {
+      display: none;
+      margin-top: 28px;
+      padding: 20px;
+      border-radius: 18px;
+      background: #f7f7f8;
+      border: 1px solid #e8e8ea;
+    }
+
+    .selected-box.show {
+      display: block;
+    }
+
+    .selected-label {
+      font-size: 13px;
+      color: #888;
+      margin-bottom: 6px;
+    }
+
+    .selected-title {
+      font-size: 18px;
+      font-weight: 800;
+      margin-bottom: 18px;
+    }
+
+    .draw-button {
+      width: 100%;
+      padding: 17px;
+      border: none;
+      border-radius: 14px;
+      background: #222;
+      color: white;
+      font-size: 17px;
+      font-weight: 800;
+      cursor: pointer;
+    }
+
+    .draw-button:hover {
+      opacity: 0.88;
     }
 
     .footer {
@@ -127,6 +174,7 @@
 
     <header>
       <div class="logo">🎲 ポケくじ</div>
+
       <div class="subtitle">
         ランダムから始まる、いつもと違うバトル。
       </div>
@@ -136,7 +184,8 @@
       ゲームを選択
     </div>
 
-    <!-- Champions -->
+
+    <!-- Pokémon Champions -->
     <div class="game-card">
 
       <button class="game-button" onclick="toggleMenu(this)">
@@ -146,23 +195,29 @@
 
       <div class="game-menu">
 
-        <button class="option" onclick="selectGame('Champions', 'M-A')">
-  レギュレーション M-A
-</button>
+        <button
+          class="option"
+          onclick="selectGame('Pokémon Champions', 'レギュレーション M-A')">
+          レギュレーション M-A
+        </button>
 
-<button class="option" onclick="selectGame('Champions', 'M-B')">
-  レギュレーション M-B
-</button>
+        <button
+          class="option"
+          onclick="selectGame('Pokémon Champions', 'レギュレーション M-B')">
+          レギュレーション M-B
+        </button>
 
-<button class="option" onclick="selectGame('Champions', 'M-C')">
-  レギュレーション M-C
-</button>
+        <button
+          class="option"
+          onclick="selectGame('Pokémon Champions', 'レギュレーション M-C')">
+          レギュレーション M-C
+        </button>
 
       </div>
     </div>
 
 
-    <!-- Main Series -->
+    <!-- Pokémon Game Series -->
     <div class="game-card">
 
       <button class="game-button" onclick="toggleMenu(this)">
@@ -172,7 +227,9 @@
 
       <div class="game-menu">
 
-        <button class="option" onclick="selectGame('SV', 'current')">
+        <button
+          class="option"
+          onclick="selectGame('スカーレット・バイオレット', 'ルール選択')">
           スカーレット・バイオレット
         </button>
 
@@ -184,15 +241,36 @@
     </div>
 
 
+    <!-- 選択結果 -->
+    <div id="selectedBox" class="selected-box">
+
+      <div class="selected-label">
+        選択中
+      </div>
+
+      <div id="selectedTitle" class="selected-title">
+      </div>
+
+      <button class="draw-button" onclick="goToDraw()">
+        🎲 ポケくじを引く
+      </button>
+
+    </div>
+
+
     <div class="footer">
       ※非公式のファン向けツールです。<br>
-      各ゲームの権利は各権利者に帰属します。
+      各ゲーム・作品の権利は各権利者に帰属します。
     </div>
 
   </main>
 
 
   <script>
+
+    let selectedGame = "";
+    let selectedRule = "";
+
 
     function toggleMenu(button) {
 
@@ -203,25 +281,38 @@
     }
 
 
-    function selectGame(game, regulation) {
+    function selectGame(game, rule) {
 
-      if (game === "Champions") {
+      selectedGame = game;
+      selectedRule = rule;
 
-        alert(
-          "Pokémon Champions\n" +
-          "レギュレーション " + regulation +
-          " を選択しました！"
-        );
+      const selectedBox =
+        document.getElementById("selectedBox");
 
+      const selectedTitle =
+        document.getElementById("selectedTitle");
+
+      selectedTitle.textContent =
+        game + " / " + rule;
+
+      selectedBox.classList.add("show");
+
+    }
+
+
+    function goToDraw() {
+
+      if (!selectedGame) {
+        return;
       }
 
-      if (game === "SV") {
-
-        alert(
-          "スカーレット・バイオレットを選択しました！"
-        );
-
-      }
+      alert(
+        selectedGame +
+        "\n" +
+        selectedRule +
+        "\n\n" +
+        "次の段階で、ここから6匹抽選できるようにします！"
+      );
 
     }
 
