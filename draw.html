@@ -23,13 +23,13 @@
       max-width: 520px;
       min-height: 100vh;
       margin: auto;
-      background: white;
+      background: #fff;
       padding: 28px 20px 60px;
     }
 
     .back {
       display: inline-block;
-      margin-bottom: 35px;
+      margin-bottom: 30px;
       color: #555;
       text-decoration: none;
       font-weight: 700;
@@ -37,7 +37,7 @@
 
     header {
       text-align: center;
-      margin-bottom: 45px;
+      margin-bottom: 35px;
     }
 
     .logo {
@@ -61,7 +61,7 @@
       display: grid;
       grid-template-columns: 1fr 1fr;
       gap: 12px;
-      margin-bottom: 28px;
+      margin-bottom: 24px;
     }
 
     .pokemon {
@@ -71,10 +71,16 @@
       display: flex;
       justify-content: center;
       align-items: center;
-      padding: 15px;
+      padding: 14px;
       text-align: center;
-      font-weight: 700;
-      color: #777;
+      font-weight: 800;
+      color: #333;
+      line-height: 1.5;
+    }
+
+    .pokemon.empty {
+      color: #aaa;
+      font-size: 28px;
     }
 
     .draw-button {
@@ -83,9 +89,26 @@
       border-radius: 16px;
       padding: 18px;
       background: #222;
-      color: white;
+      color: #fff;
       font-size: 17px;
       font-weight: 800;
+      cursor: pointer;
+      margin-bottom: 12px;
+    }
+
+    .draw-button:hover {
+      opacity: 0.88;
+    }
+
+    .sub-button {
+      width: 100%;
+      border: 1px solid #ddd;
+      border-radius: 16px;
+      padding: 15px;
+      background: #fff;
+      color: #444;
+      font-size: 15px;
+      font-weight: 700;
       cursor: pointer;
     }
 
@@ -109,65 +132,98 @@
 
     <header>
       <div class="logo">🎲 ポケくじ</div>
-
-      <div id="gameName" class="game">
-        Pokémon Champions
-      </div>
-
-      <div id="ruleName" class="rule">
-        レギュレーション
-      </div>
+      <div id="gameName" class="game"></div>
+      <div id="ruleName" class="rule"></div>
     </header>
 
-
-    <div class="result">
-
-      <div class="pokemon">？</div>
-      <div class="pokemon">？</div>
-      <div class="pokemon">？</div>
-      <div class="pokemon">？</div>
-      <div class="pokemon">？</div>
-      <div class="pokemon">？</div>
-
+    <div class="result" id="result">
+      <div class="pokemon empty">？</div>
+      <div class="pokemon empty">？</div>
+      <div class="pokemon empty">？</div>
+      <div class="pokemon empty">？</div>
+      <div class="pokemon empty">？</div>
+      <div class="pokemon empty">？</div>
     </div>
-
 
     <button class="draw-button" onclick="drawPokemon()">
       🎲 6匹を抽選する
     </button>
 
-    <div class="message">
-      次の工程で、選択したレギュレーションに対応した<br>
-      ポケモンをここにランダム表示します。
+    <button class="sub-button" onclick="resetDraw()">
+      リセット
+    </button>
+
+    <div id="message" class="message">
+      選択したルールから、重複なしで6匹を抽選します。
     </div>
 
   </main>
 
+  <script src="champions-ma.js"></script>
 
   <script>
-
     const params = new URLSearchParams(window.location.search);
 
-    const game = params.get("game");
-    const rule = params.get("rule");
+    const game = params.get("game") || "";
+    const rule = params.get("rule") || "";
 
-    if (game) {
-      document.getElementById("gameName").textContent = game;
+    document.getElementById("gameName").textContent = game;
+    document.getElementById("ruleName").textContent = rule;
+
+    function getPokemonPool() {
+
+      if (
+        game === "Pokémon Champions" &&
+        rule === "レギュレーション M-A"
+      ) {
+        return championsMA;
+      }
+
+      return [];
     }
-
-    if (rule) {
-      document.getElementById("ruleName").textContent = rule;
-    }
-
 
     function drawPokemon() {
 
-      alert(
-        "次にポケモンデータを入れて、ここを本物の抽選にします！"
-      );
+      const pool = getPokemonPool();
 
+      if (pool.length < 6) {
+        document.getElementById("message").textContent =
+          "このルールのポケモンデータはまだ登録されていません。";
+        return;
+      }
+
+      const shuffled = [...pool];
+
+      for (let i = shuffled.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+      }
+
+      const selected = shuffled.slice(0, 6);
+
+      const slots = document.querySelectorAll(".pokemon");
+
+      slots.forEach((slot, index) => {
+        slot.textContent = selected[index];
+        slot.classList.remove("empty");
+      });
+
+      document.getElementById("message").textContent =
+        "抽選完了！この6匹で構築してみよう。";
     }
 
+    function resetDraw() {
+
+      const slots = document.querySelectorAll(".pokemon");
+
+      slots.forEach(slot => {
+        slot.textContent = "？";
+        slot.classList.add("empty");
+      });
+
+      document.getElementById("message").textContent =
+        "選択したルールから、重複なしで6匹を抽選します。";
+    }
   </script>
 
 </body>
