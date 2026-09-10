@@ -1,1 +1,109 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ポケくじ</title>
 
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif;
+      background: #f7f7f7;
+      color: #222;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .app {
+      width: 100%;
+      max-width: 480px;
+      min-height: 100vh;
+      background: white;
+      padding: 40px 24px;
+      text-align: center;
+    }
+
+    .logo {
+      font-size: 42px;
+      font-weight: 800;
+      margin-top: 80px;
+      margin-bottom: 12px;
+    }
+
+    .subtitle {
+      color: #777;
+      margin-bottom: 60px;
+    }
+
+    h2 {
+      font-size: 20px;
+      margin-bottom: 24px;
+    }
+
+    .mode-button {
+      width: 100%;
+      padding: 20px;
+      margin-bottom: 16px;
+      border: none;
+      border-radius: 16px;
+      background: #222;
+      color: white;
+      font-size: 18px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    .mode-button:hover {
+      opacity: 0.85;
+    }
+
+    .note {
+      margin-top: 40px;
+      font-size: 13px;
+      color: #999;
+    }
+  </style>
+</head>
+
+<body>
+
+  <main class="app">
+
+    <div class="logo">🎲 ポケくじ</div>
+
+    <p class="subtitle">
+      ポケモンバトルを、もっと自由に。
+    </p>
+
+    <h2>どのルールで遊ぶ？</h2>
+
+    <button class="mode-button" onclick="selectMode('Champions')">
+      Pokémon Champions
+    </button>
+
+    <button class="mode-button" onclick="selectMode('SV')">
+      Pokémon Scarlet / Violet
+    </button>
+
+    <p class="note">
+      ランダムにポケモンを選んで<br>
+      自分だけのバトルに挑戦しよう！
+    </p>
+
+  </main>
+
+  <script>
+    function selectMode(mode) {
+      alert(mode + "モードを選択しました！");
+    }
+  </script>
+
+</body>
+</html>
