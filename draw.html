@@ -177,6 +177,7 @@
   <script src="champions-ma.js"></script>
 <script src="champions-mb.js"></script>
 <script src="champions-mc.js"></script>
+  <script src="pokemon-images.js"></script>
   <script>
     const params = new URLSearchParams(window.location.search);
 
@@ -229,14 +230,15 @@
 
       slots.forEach((slot, index) => {
   const pokemonName = selected[index];
+  const imageUrl = getPokemonImage(pokemonName);
 
   slot.innerHTML = `
+    ${imageUrl ? `<img src="${imageUrl}" alt="${pokemonName}">` : ""}
     <div class="pokemon-name">${pokemonName}</div>
   `;
 
   slot.classList.remove("empty");
 });
-
       document.getElementById("message").textContent =
         "抽選完了！この6匹で構築してみよう。";
     }
