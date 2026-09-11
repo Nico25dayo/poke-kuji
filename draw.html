@@ -65,7 +65,7 @@
     }
 
     .pokemon {
-      min-height: 170px;
+      min-height: 210px;
       border-radius: 16px;
       background: #f3f4f6;
       display: flex;
@@ -103,6 +103,24 @@
       font-weight: 600;
       color: #666;
       text-align: center;
+    }
+
+    .reroll-button {
+      width: 100%;
+      margin-top: 4px;
+      border: none;
+      border-radius: 10px;
+      padding: 8px 10px;
+      background: #fff;
+      color: #444;
+      font-size: 11px;
+      font-weight: 700;
+      cursor: pointer;
+      border: 1px solid #ddd;
+    }
+
+    .reroll-button:hover {
+      background: #fafafa;
     }
 
     .pokemon.empty {
@@ -204,10 +222,13 @@
     document.getElementById("ruleName").textContent = rule;
 
 
+    let currentTeam = [];
+    let currentItems = [];
+    let currentNatures = [];
+
+
     function getPokemonPool() {
-
       if (game === "Pokémon Champions") {
-
         if (rule === "レギュレーション M-A") {
           return championsMA;
         }
@@ -226,9 +247,7 @@
 
 
     function getItemPool() {
-
       if (game === "Pokémon Champions") {
-
         if (rule === "レギュレーション M-A") {
           return championsItemsMA;
         }
@@ -276,7 +295,6 @@
 
 
     function getRandomNature() {
-
       return pokemonNatures[
         Math.floor(Math.random() * pokemonNatures.length)
       ];
@@ -284,13 +302,10 @@
 
 
     function shuffleArray(array) {
-
       const shuffled = [...array];
 
       for (let i = shuffled.length - 1; i > 0; i--) {
-
-        const j =
-          Math.floor(Math.random() * (i + 1));
+        const j = Math.floor(Math.random() * (i + 1));
 
         [shuffled[i], shuffled[j]] =
           [shuffled[j], shuffled[i]];
@@ -300,87 +315,156 @@
     }
 
 
-    function drawPokemon() {
+    async function renderSlot(index) {
+      const slots =
+        document.querySelectorAll(".pokemon");
 
+      const slot = slots[index];
+
+      const pokemonName = currentTeam[index];
+      const itemName = currentItems[index];
+      const natureName = currentNatures[index];
+
+      slot.innerHTML = `
+        <div class="pokemon-name">${pokemonName}</div>
+        <div class="pokemon-item">持ち物：${itemName}</div>
+        <div class="pokemon-nature">性格：${natureName}</div>
+        <button class="reroll-button" onclick="rerollPokemon(${index})">
+          🔄 この1匹だけ引き直す
+        </button>
+      `;
+
+      slot.classList.remove("empty");
+
+      const imageUrl =
+        await getPokemonImage(pokemonName);
+
+      if (imageUrl) {
+        slot.innerHTML = `
+          <img src="${imageUrl}" alt="${pokemonName}">
+          <div class="pokemon-name">${pokemonName}</div>
+          <div class="pokemon-item">持ち物：${itemName}</div>
+          <div class="pokemon-nature">性格：${natureName}</div>
+          <button class="reroll-button" onclick="rerollPokemon(${index})">
+            🔄 この1匹だけ引き直す
+          </button>
+        `;
+      }
+    }
+
+
+    async function drawPokemon() {
       const pool = getPokemonPool();
       const itemPool = getItemPool();
 
       if (pool.length < 6 || itemPool.length < 6) {
-
         document.getElementById("message").textContent =
           "このルールのデータはまだ登録されていません。";
 
         return;
       }
 
-
-      // ポケモンを重複なしで6匹抽選
-      const selected =
+      currentTeam =
         shuffleArray(pool).slice(0, 6);
 
-
-      // 持ち物を重複なしで6個抽選
-      const selectedItems =
+      currentItems =
         shuffleArray(itemPool).slice(0, 6);
 
+      currentNatures = [];
 
-      const slots =
-        document.querySelectorAll(".pokemon");
+      for (let i = 0; i < 6; i++) {
+        currentNatures.push(getRandomNature());
+      }
 
-
-      slots.forEach(async (slot, index) => {
-
-        const pokemonName = selected[index];
-        const itemName = selectedItems[index];
-        const natureName = getRandomNature();
-
-
-        // 画像取得前
-        slot.innerHTML = `
-          <div class="pokemon-name">${pokemonName}</div>
-          <div class="pokemon-item">持ち物：${itemName}</div>
-          <div class="pokemon-nature">性格：${natureName}</div>
-        `;
-
-        slot.classList.remove("empty");
-
-
-        // ポケモン画像取得
-        const imageUrl =
-          await getPokemonImage(pokemonName);
-
-
-        // 画像取得成功時
-        if (imageUrl) {
-
-          slot.innerHTML = `
-            <img src="${imageUrl}" alt="${pokemonName}">
-            <div class="pokemon-name">${pokemonName}</div>
-            <div class="pokemon-item">持ち物：${itemName}</div>
-            <div class="pokemon-nature">性格：${natureName}</div>
-          `;
-        }
-
-      });
-
+      for (let i = 0; i < 6; i++) {
+        renderSlot(i);
+      }
 
       document.getElementById("message").textContent =
         "抽選完了！6匹・持ち物・性格を決定しました。";
     }
 
 
+    async function rerollPokemon(index) {
+      const pool = getPokemonPool();
+      const itemPool = getItemPool();
+
+      if (currentTeam.length !== 6) {
+        return;
+      }
+
+      const usedPokemon =
+        currentTeam.filter((_, i) => i !== index);
+
+      const availablePokemon =
+        pool.filter(name => !usedPokemon.includes(name));
+
+
+      const usedItems =
+        currentItems.filter((_, i) => i !== index);
+
+      const availableItems =
+        itemPool.filter(item => !usedItems.includes(item));
+
+
+      if (
+        availablePokemon.length === 0 ||
+        availableItems.length === 0
+      ) {
+        return;
+      }
+
+
+      const oldPokemon =
+        currentTeam[index];
+
+      let newPokemon =
+        availablePokemon[
+          Math.floor(Math.random() * availablePokemon.length)
+        ];
+
+
+      if (availablePokemon.length > 1) {
+        while (newPokemon === oldPokemon) {
+          newPokemon =
+            availablePokemon[
+              Math.floor(Math.random() * availablePokemon.length)
+            ];
+        }
+      }
+
+
+      currentTeam[index] = newPokemon;
+
+      currentItems[index] =
+        availableItems[
+          Math.floor(Math.random() * availableItems.length)
+        ];
+
+      currentNatures[index] =
+        getRandomNature();
+
+
+      await renderSlot(index);
+
+
+      document.getElementById("message").textContent =
+        `${oldPokemon}を引き直しました。`;
+    }
+
+
     function resetDraw() {
+      currentTeam = [];
+      currentItems = [];
+      currentNatures = [];
 
       const slots =
         document.querySelectorAll(".pokemon");
 
       slots.forEach(slot => {
-
         slot.textContent = "？";
         slot.classList.add("empty");
-
       });
-
 
       document.getElementById("message").textContent =
         "選択したルールから、重複なしで6匹を抽選します。";
