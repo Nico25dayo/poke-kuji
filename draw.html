@@ -77,7 +77,22 @@
       color: #333;
       line-height: 1.5;
     }
+.pokemon {
+  flex-direction: column;
+  gap: 8px;
+}
 
+.pokemon img {
+  width: 90px;
+  height: 90px;
+  object-fit: contain;
+}
+
+.pokemon-name {
+  font-size: 14px;
+  font-weight: 800;
+  text-align: center;
+}
     .pokemon.empty {
       color: #aaa;
       font-size: 28px;
@@ -213,9 +228,14 @@
       const slots = document.querySelectorAll(".pokemon");
 
       slots.forEach((slot, index) => {
-        slot.textContent = selected[index];
-        slot.classList.remove("empty");
-      });
+  const pokemonName = selected[index];
+
+  slot.innerHTML = `
+    <div class="pokemon-name">${pokemonName}</div>
+  `;
+
+  slot.classList.remove("empty");
+});
 
       document.getElementById("message").textContent =
         "抽選完了！この6匹で構築してみよう。";
