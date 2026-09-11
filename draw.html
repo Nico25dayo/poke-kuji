@@ -238,9 +238,7 @@
   </button>
 
   <div id="sharePreview" class="share-preview">
-    <img
-      id="sharePreviewImage"
-      alt="ポケくじ シェア画像">
+    <img id="sharePreviewImage" alt="ポケくじ シェア画像">
   </div>
 
   <div id="message" class="message">
@@ -249,17 +247,12 @@
 
 </main>
 
-
 <script src="champions-ma.js"></script>
 <script src="champions-mb.js"></script>
 <script src="champions-mc.js"></script>
-
 <script src="champions-items.js"></script>
-
 <script src="champions-mega.js"></script>
-
 <script src="pokemon-images.js"></script>
-
 
 <script>
 
@@ -272,11 +265,8 @@ const game =
 const rule =
   params.get("rule") || "";
 
-document.getElementById("gameName").textContent =
-  game;
-
-document.getElementById("ruleName").textContent =
-  rule;
+document.getElementById("gameName").textContent = game;
+document.getElementById("ruleName").textContent = rule;
 
 
 let currentTeam = [];
@@ -284,6 +274,7 @@ let currentItems = [];
 let currentNatures = [];
 let currentImageUrls = [];
 
+let currentMegaEnabled = false;
 let currentMegaIndex = -1;
 let currentMegaStone = "";
 
@@ -321,13 +312,9 @@ const pokemonNatures = [
 
 
 function getRandomNature() {
-
   return pokemonNatures[
-    Math.floor(
-      Math.random() * pokemonNatures.length
-    )
+    Math.floor(Math.random() * pokemonNatures.length)
   ];
-
 }
 
 
@@ -350,7 +337,6 @@ function getPokemonPool() {
   }
 
   return [];
-
 }
 
 
@@ -373,7 +359,6 @@ function getItemPool() {
   }
 
   return [];
-
 }
 
 
@@ -381,16 +366,10 @@ function shuffleArray(array) {
 
   const shuffled = [...array];
 
-  for (
-    let i = shuffled.length - 1;
-    i > 0;
-    i--
-  ) {
+  for (let i = shuffled.length - 1; i > 0; i--) {
 
     const j =
-      Math.floor(
-        Math.random() * (i + 1)
-      );
+      Math.floor(Math.random() * (i + 1));
 
     [
       shuffled[i],
@@ -399,82 +378,123 @@ function shuffleArray(array) {
       shuffled[j],
       shuffled[i]
     ];
-
   }
 
   return shuffled;
-
 }
 
 
-function chooseInitialMega() {
+function chooseMegaOption(pokemonName) {
+
+  const options =
+    getMegaOptions(pokemonName, rule);
+
+  if (options.length === 0) {
+    return null;
+  }
+
+  return options[
+    Math.floor(Math.random() * options.length)
+  ];
+}
+
+
+function buildTeam() {
+
+  const pool = getPokemonPool();
+  const itemPool = getItemPool();
+
+  currentMegaEnabled =
+    Math.random() < 0.5;
 
   currentMegaIndex = -1;
   currentMegaStone = "";
 
-  const candidates = [];
+  /*
+    先に50%でメガあり・なしを決定。
 
-  currentTeam.forEach(
-    (pokemonName, index) => {
+    メガありなら、
+    必ず1匹をメガ対応ポケモンから選ぶ。
+  */
 
-      const options =
-        getMegaOptions(
-          pokemonName,
-          rule
+  if (currentMegaEnabled) {
+
+    const megaCandidates =
+      pool.filter(name =>
+        getMegaOptions(name, rule).length > 0
+      );
+
+    if (megaCandidates.length > 0) {
+
+      const megaPokemon =
+        megaCandidates[
+          Math.floor(
+            Math.random() *
+            megaCandidates.length
+          )
+        ];
+
+      const remainingPool =
+        pool.filter(
+          name => name !== megaPokemon
         );
 
-      if (options.length > 0) {
+      const otherFive =
+        shuffleArray(remainingPool)
+          .slice(0, 5);
 
-        candidates.push({
-          index: index,
-          options: options
-        });
+      currentTeam =
+        shuffleArray([
+          megaPokemon,
+          ...otherFive
+        ]);
 
-      }
+      currentMegaIndex =
+        currentTeam.indexOf(megaPokemon);
 
+      const megaOption =
+        chooseMegaOption(megaPokemon);
+
+      currentMegaStone =
+        megaOption
+          ? megaOption.stone
+          : "";
+
+    } else {
+
+      currentMegaEnabled = false;
+
+      currentTeam =
+        shuffleArray(pool).slice(0, 6);
     }
-  );
 
+  } else {
 
-  if (candidates.length === 0) {
-    return;
+    currentTeam =
+      shuffleArray(pool).slice(0, 6);
   }
 
 
-  // 50%で今回はメガ枠なし
-  if (Math.random() < 0.5) {
-    return;
+  /*
+    通常アイテムは6個重複なしで準備。
+
+    メガありならメガ枠だけ
+    メガストーンで上書き。
+  */
+
+  currentItems =
+    shuffleArray(itemPool)
+      .slice(0, 6);
+
+  if (
+    currentMegaEnabled &&
+    currentMegaIndex >= 0 &&
+    currentMegaStone
+  ) {
+
+    currentItems[currentMegaIndex] =
+      currentMegaStone;
   }
-
-
-  const selected =
-    candidates[
-      Math.floor(
-        Math.random() *
-        candidates.length
-      )
-    ];
-
-
-  const megaOption =
-    selected.options[
-      Math.floor(
-        Math.random() *
-        selected.options.length
-      )
-    ];
-
-
-  currentMegaIndex =
-    selected.index;
-
-  currentMegaStone =
-    megaOption.stone;
-
-  currentItems[
-    currentMegaIndex
-  ] = currentMegaStone;
-
 }
 
 
@@ -496,6 +516,7 @@ async function renderSlot(index) {
     currentNatures[index];
 
   const isMega =
+    currentMegaEnabled &&
     index === currentMegaIndex;
 
 
@@ -551,7 +572,6 @@ async function renderSlot(index) {
       🔄 この1匹だけ引き直す
     </button>
   `;
-
 }
 
 
@@ -563,7 +583,6 @@ async function renderAllSlots() {
         renderSlot(index)
     )
   );
-
 }
 
 
@@ -587,60 +606,44 @@ async function drawPokemon() {
       "このルールのデータはまだ登録されていません。";
 
     return;
-
   }
 
 
-  currentTeam =
-    shuffleArray(pool)
-      .slice(0, 6);
-
-
-  currentItems =
-    shuffleArray(itemPool)
-      .slice(0, 6);
+  buildTeam();
 
 
   currentNatures = [];
-
   currentImageUrls = [];
 
-  shareImageBlob = null;
-
-
-  for (
-    let i = 0;
-    i < 6;
-    i++
-  ) {
+  for (let i = 0; i < 6; i++) {
 
     currentNatures.push(
       getRandomNature()
     );
-
   }
-
-
-  chooseInitialMega();
-
-
-  await renderAllSlots();
 
 
   hideOldPreview();
 
+  await renderAllSlots();
+
 
   document.getElementById(
     "imageButton"
-  ).style.display = "block";
+  ).style.display =
+    "block";
 
 
   document.getElementById(
     "shareButton"
-  ).style.display = "block";
+  ).style.display =
+    "block";
 
 
-  if (currentMegaIndex >= 0) {
+  if (
+    currentMegaEnabled &&
+    currentMegaIndex >= 0
+  ) {
 
     document.getElementById(
       "message"
@@ -653,9 +656,7 @@ async function drawPokemon() {
       "message"
     ).textContent =
       "抽選完了！今回はメガ枠なしです。";
-
   }
-
 }
 
 
@@ -664,13 +665,10 @@ function getAvailableNormalItem(index) {
   const itemPool =
     getItemPool();
 
-
   const usedItems =
     currentItems.filter(
-      (_, i) =>
-        i !== index
+      (_, i) => i !== index
     );
-
 
   const availableItems =
     itemPool.filter(
@@ -678,13 +676,9 @@ function getAvailableNormalItem(index) {
         !usedItems.includes(item)
     );
 
-
-  if (
-    availableItems.length === 0
-  ) {
+  if (availableItems.length === 0) {
     return "";
   }
-
 
   return availableItems[
     Math.floor(
@@ -692,164 +686,123 @@ function getAvailableNormalItem(index) {
       availableItems.length
     )
   ];
+}
 
+
+function getAvailablePokemon(index) {
+
+  const pool =
+    getPokemonPool();
+
+  const usedPokemon =
+    currentTeam.filter(
+      (_, i) => i !== index
+    );
+
+  return pool.filter(
+    pokemon =>
+      !usedPokemon.includes(pokemon) &&
+      pokemon !== currentTeam[index]
+  );
+}
+
+
+function getAvailableMegaPokemon(index) {
+
+  return getAvailablePokemon(index)
+    .filter(
+      pokemon =>
+        getMegaOptions(
+          pokemon,
+          rule
+        ).length > 0
+    );
 }
 
 
 async function rerollPokemon(index) {
 
-  if (
-    currentTeam.length !== 6
-  ) {
+  if (currentTeam.length !== 6) {
     return;
   }
-
-
-  const pool =
-    getPokemonPool();
-
 
   const oldPokemon =
     currentTeam[index];
 
-
-  const usedPokemon =
-    currentTeam.filter(
-      (_, i) =>
-        i !== index
-    );
-
-
-  const availablePokemon =
-    pool.filter(
-      name =>
-        !usedPokemon.includes(name) &&
-        name !== oldPokemon
-    );
-
-
-  if (
-    availablePokemon.length === 0
-  ) {
-    return;
-  }
-
-
-  const newPokemon =
-    availablePokemon[
-      Math.floor(
-        Math.random() *
-        availablePokemon.length
-      )
-    ];
-
-
-  const wasMega =
+  const isMegaSlot =
+    currentMegaEnabled &&
     index === currentMegaIndex;
 
 
-  currentTeam[index] =
-    newPokemon;
+  /*
+    メガ枠を引き直した場合は
+    メガ対応ポケモンだけから再抽選。
+  */
+
+  if (isMegaSlot) {
+
+    const megaPool =
+      getAvailableMegaPokemon(index);
+
+    if (megaPool.length === 0) {
+      return;
+    }
+
+    const newPokemon =
+      megaPool[
+        Math.floor(
+          Math.random() *
+          megaPool.length
+        )
+      ];
+
+    const megaOption =
+      chooseMegaOption(newPokemon);
+
+    currentTeam[index] =
+      newPokemon;
+
+    currentMegaStone =
+      megaOption
+        ? megaOption.stone
+        : "";
+
+    currentItems[index] =
+      currentMegaStone;
+
+  } else {
+
+    /*
+      通常枠は普通のポケモンから再抽選。
+      メガ対応ポケモンが出ても、
+      メガ枠そのものにはならない。
+    */
+
+    const availablePokemon =
+      getAvailablePokemon(index);
+
+    if (availablePokemon.length === 0) {
+      return;
+    }
+
+    currentTeam[index] =
+      availablePokemon[
+        Math.floor(
+          Math.random() *
+          availablePokemon.length
+        )
+      ];
+
+    currentItems[index] =
+      getAvailableNormalItem(index);
+  }
+
 
   currentNatures[index] =
     getRandomNature();
 
 
-  if (wasMega) {
-
-    currentMegaIndex = -1;
-    currentMegaStone = "";
-
-    const megaOptions =
-      getMegaOptions(
-        newPokemon,
-        rule
-      );
-
-
-    if (
-      megaOptions.length > 0 &&
-      Math.random() >= 0.5
-    ) {
-
-      const megaOption =
-        megaOptions[
-          Math.floor(
-            Math.random() *
-            megaOptions.length
-          )
-        ];
-
-      currentMegaIndex =
-        index;
-
-      currentMegaStone =
-        megaOption.stone;
-
-      currentItems[index] =
-        currentMegaStone;
-
-    } else {
-
-      currentItems[index] =
-        getAvailableNormalItem(
-          index
-        );
-
-    }
-
-  } else {
-
-    currentItems[index] =
-      getAvailableNormalItem(
-        index
-      );
-
-
-    // 現在メガ枠がない場合だけ
-    // 新ポケモンがメガ候補なら抽選
-    if (currentMegaIndex < 0) {
-
-      const megaOptions =
-        getMegaOptions(
-          newPokemon,
-          rule
-        );
-
-
-      if (
-        megaOptions.length > 0 &&
-        Math.random() >= 0.5
-      ) {
-
-        const megaOption =
-          megaOptions[
-            Math.floor(
-              Math.random() *
-              megaOptions.length
-            )
-          ];
-
-        currentMegaIndex =
-          index;
-
-        currentMegaStone =
-          megaOption.stone;
-
-        currentItems[index] =
-          currentMegaStone;
-
-      }
-
-    }
-
-  }
-
-
-  shareImageBlob = null;
-
   hideOldPreview();
-
 
   await renderSlot(index);
 
@@ -858,45 +811,32 @@ async function rerollPokemon(index) {
     "message"
   ).textContent =
     `${oldPokemon}を引き直しました。`;
-
 }
 
 
 function loadImageForCanvas(src) {
 
-  return new Promise(
-    resolve => {
+  return new Promise(resolve => {
 
-      if (!src) {
-
-        resolve(null);
-
-        return;
-
-      }
-
-
-      const img =
-        new Image();
-
-
-      img.crossOrigin =
-        "anonymous";
-
-
-      img.onload =
-        () => resolve(img);
-
-
-      img.onerror =
-        () => resolve(null);
-
-
-      img.src = src;
-
+    if (!src) {
+      resolve(null);
+      return;
     }
-  );
 
+    const img =
+      new Image();
+
+    img.crossOrigin =
+      "anonymous";
+
+    img.onload =
+      () => resolve(img);
+
+    img.onerror =
+      () => resolve(null);
+
+    img.src = src;
+  });
 }
 
 
@@ -910,9 +850,14 @@ function drawRoundedRect(
   fillStyle
 ) {
 
-  // 重要：
-  // 前のカードを塗り直さないため
-  // 必ず beginPath()
+  /*
+    超重要。
+
+    beginPath() がないと
+    前に描いたカードまで再度fillされて
+    テキストやポケモン画像が消える。
+  */
+
   ctx.beginPath();
 
   ctx.roundRect(
@@ -928,14 +873,13 @@ function drawRoundedRect(
 
   ctx.fill();
 
+  ctx.closePath();
 }
 
 
 async function createShareImage() {
 
-  if (
-    currentTeam.length !== 6
-  ) {
+  if (currentTeam.length !== 6) {
     return;
   }
 
@@ -946,14 +890,30 @@ async function createShareImage() {
     "シェア画像を作成中…";
 
 
+  /*
+    画像URLがまだ取れていない場合に備えて
+    6匹すべて取得し直す。
+  */
+
+  currentImageUrls =
+    await Promise.all(
+      currentTeam.map(
+        name =>
+          getPokemonImage(name)
+      )
+    );
+
+
   const canvas =
     document.createElement(
       "canvas"
     );
 
+  canvas.width =
+    1080;
 
-  canvas.width = 1080;
-  canvas.height = 1350;
+  canvas.height =
+    1350;
 
 
   const ctx =
@@ -973,20 +933,21 @@ async function createShareImage() {
 
   drawRoundedRect(
     ctx,
-    60,
     50,
-    960,
-    1240,
+    40,
+    980,
+    1260,
     36,
     "#ffffff"
   );
 
 
-  ctx.fillStyle =
-    "#222";
-
   ctx.textAlign =
     "center";
+
+
+  ctx.fillStyle =
+    "#222";
 
   ctx.font =
     "900 60px sans-serif";
@@ -994,7 +955,7 @@ async function createShareImage() {
   ctx.fillText(
     "🎲 ポケくじ",
     540,
-    135
+    130
   );
 
 
@@ -1007,7 +968,7 @@ async function createShareImage() {
   ctx.fillText(
     rule,
     540,
-    190
+    185
   );
 
 
@@ -1020,21 +981,26 @@ async function createShareImage() {
     );
 
 
-  const cardWidth = 430;
-  const cardHeight = 285;
+  const cardWidth =
+    430;
 
-  const startX = 90;
-  const startY = 230;
+  const cardHeight =
+    285;
 
-  const gapX = 40;
-  const gapY = 30;
+  const startX =
+    90;
+
+  const startY =
+    225;
+
+  const gapX =
+    40;
+
+  const gapY =
+    30;
 
 
-  for (
-    let i = 0;
-    i < 6;
-    i++
-  ) {
+  for (let i = 0; i < 6; i++) {
 
     const col =
       i % 2;
@@ -1042,20 +1008,18 @@ async function createShareImage() {
     const row =
       Math.floor(i / 2);
 
-
     const x =
       startX +
       col *
       (cardWidth + gapX);
-
 
     const y =
       startY +
       row *
       (cardHeight + gapY);
 
-
     const isMega =
+      currentMegaEnabled &&
       i === currentMegaIndex;
 
 
@@ -1086,9 +1050,8 @@ async function createShareImage() {
       ctx.fillText(
         "⭐ メガ枠",
         x + cardWidth / 2,
-        y + 28
+        y + 27
       );
-
     }
 
 
@@ -1109,7 +1072,6 @@ async function createShareImage() {
         imageSize,
         imageSize
       );
-
     }
 
 
@@ -1135,10 +1097,8 @@ async function createShareImage() {
         ? "#9a6500"
         : "#666";
 
-
     ctx.font =
       "600 21px sans-serif";
-
 
     ctx.fillText(
       `持ち物：${currentItems[i]}`,
@@ -1151,14 +1111,12 @@ async function createShareImage() {
     ctx.fillStyle =
       "#666";
 
-
     ctx.fillText(
       `性格：${currentNatures[i]}`,
       x + cardWidth / 2,
       y + 252,
       cardWidth - 30
     );
-
   }
 
 
@@ -1171,11 +1129,10 @@ async function createShareImage() {
   ctx.textAlign =
     "center";
 
-
   ctx.fillText(
     "#ポケくじ  #ポケモンチャンピオンズ",
     540,
-    1220
+    1225
   );
 
 
@@ -1188,7 +1145,6 @@ async function createShareImage() {
           "image/png",
           1
         );
-
       }
     );
 
@@ -1201,7 +1157,6 @@ async function createShareImage() {
       "シェア画像を作成できませんでした。";
 
     return;
-
   }
 
 
@@ -1214,7 +1169,6 @@ async function createShareImage() {
     URL.revokeObjectURL(
       previewObjectUrl
     );
-
   }
 
 
@@ -1239,7 +1193,6 @@ async function createShareImage() {
     "message"
   ).textContent =
     "シェア画像を作成しました！";
-
 }
 
 
@@ -1249,17 +1202,14 @@ function hideOldPreview() {
     "sharePreview"
   ).classList.remove("show");
 
-
-  shareImageBlob = null;
-
+  shareImageBlob =
+    null;
 }
 
 
 async function shareResult() {
 
-  if (
-    currentTeam.length !== 6
-  ) {
+  if (currentTeam.length !== 6) {
     return;
   }
 
@@ -1267,7 +1217,6 @@ async function shareResult() {
   if (!shareImageBlob) {
 
     await createShareImage();
-
   }
 
 
@@ -1281,6 +1230,7 @@ async function shareResult() {
 
 
   const megaText =
+    currentMegaEnabled &&
     currentMegaIndex >= 0
       ? `\n⭐ メガ枠：${currentTeam[currentMegaIndex]}（${currentMegaStone}）\n`
       : "";
@@ -1336,11 +1286,9 @@ ${megaText}
       console.log(
         "共有をキャンセルしました。"
       );
-
     }
 
     return;
-
   }
 
 
@@ -1359,11 +1307,9 @@ ${megaText}
       console.log(
         "共有をキャンセルしました。"
       );
-
     }
 
     return;
-
   }
 
 
@@ -1378,7 +1324,6 @@ ${megaText}
     "message"
   ).textContent =
     "共有文をコピーしました！";
-
 }
 
 
@@ -1389,6 +1334,7 @@ function resetDraw() {
   currentNatures = [];
   currentImageUrls = [];
 
+  currentMegaEnabled = false;
   currentMegaIndex = -1;
   currentMegaStone = "";
 
@@ -1401,21 +1347,19 @@ function resetDraw() {
     );
 
 
-  slots.forEach(
-    slot => {
+  slots.forEach(slot => {
 
-      slot.textContent = "？";
+    slot.textContent =
+      "？";
 
-      slot.classList.add(
-        "empty"
-      );
+    slot.classList.add(
+      "empty"
+    );
 
-      slot.classList.remove(
-        "mega"
-      );
-
-    }
-  );
+    slot.classList.remove(
+      "mega"
+    );
+  });
 
 
   document.getElementById(
@@ -1437,7 +1381,6 @@ function resetDraw() {
     "message"
   ).textContent =
     "選択したルールから、重複なしで6匹を抽選します。";
-
 }
 
 </script>
