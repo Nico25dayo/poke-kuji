@@ -65,34 +65,40 @@
     }
 
     .pokemon {
-      min-height: 110px;
+      min-height: 150px;
       border-radius: 16px;
       background: #f3f4f6;
       display: flex;
+      flex-direction: column;
       justify-content: center;
       align-items: center;
+      gap: 8px;
       padding: 14px;
       text-align: center;
       font-weight: 800;
       color: #333;
       line-height: 1.5;
     }
-.pokemon {
-  flex-direction: column;
-  gap: 8px;
-}
 
-.pokemon img {
-  width: 90px;
-  height: 90px;
-  object-fit: contain;
-}
+    .pokemon img {
+      width: 90px;
+      height: 90px;
+      object-fit: contain;
+    }
 
-.pokemon-name {
-  font-size: 14px;
-  font-weight: 800;
-  text-align: center;
-}
+    .pokemon-name {
+      font-size: 14px;
+      font-weight: 800;
+      text-align: center;
+    }
+
+    .pokemon-item {
+      font-size: 12px;
+      font-weight: 600;
+      color: #666;
+      text-align: center;
+    }
+
     .pokemon.empty {
       color: #aaa;
       font-size: 28px;
@@ -174,11 +180,15 @@
 
   </main>
 
+
   <script src="champions-ma.js"></script>
-<script src="champions-mb.js"></script>
-<script src="champions-mc.js"></script>
-<script src="champions-items.js"></script>
-<script src="pokemon-images.js"></script>
+  <script src="champions-mb.js"></script>
+  <script src="champions-mc.js"></script>
+  <script src="champions-items.js"></script>
+  <script src="pokemon-images.js"></script>
+
+  <script>
+
     const params = new URLSearchParams(window.location.search);
 
     const game = params.get("game") || "";
@@ -187,87 +197,145 @@
     document.getElementById("gameName").textContent = game;
     document.getElementById("ruleName").textContent = rule;
 
-   function getPokemonPool() {
 
-  if (game === "Pokémon Champions") {
+    function getPokemonPool() {
 
-    if (rule === "レギュレーション M-A") {
-      return championsMA;
+      if (game === "Pokémon Champions") {
+
+        if (rule === "レギュレーション M-A") {
+          return championsMA;
+        }
+
+        if (rule === "レギュレーション M-B") {
+          return championsMB;
+        }
+
+        if (rule === "レギュレーション M-C") {
+          return championsMC;
+        }
+      }
+
+      return [];
     }
 
-    if (rule === "レギュレーション M-B") {
-      return championsMB;
+
+    function getItemPool() {
+
+      if (game === "Pokémon Champions") {
+
+        if (rule === "レギュレーション M-A") {
+          return championsItemsMA;
+        }
+
+        if (rule === "レギュレーション M-B") {
+          return championsItemsMB;
+        }
+
+        if (rule === "レギュレーション M-C") {
+          return championsItemsMC;
+        }
+      }
+
+      return [];
     }
 
-    if (rule === "レギュレーション M-C") {
-      return championsMC;
-    }
-  }
 
-  return [];
-}
+    function shuffleArray(array) {
+
+      const shuffled = [...array];
+
+      for (let i = shuffled.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+
+        [shuffled[i], shuffled[j]] =
+          [shuffled[j], shuffled[i]];
+      }
+
+      return shuffled;
+    }
+
 
     function drawPokemon() {
 
       const pool = getPokemonPool();
+      const itemPool = getItemPool();
 
-      if (pool.length < 6) {
+      if (pool.length < 6 || itemPool.length < 6) {
+
         document.getElementById("message").textContent =
-          "このルールのポケモンデータはまだ登録されていません。";
+          "このルールのデータはまだ登録されていません。";
+
         return;
       }
 
-      const shuffled = [...pool];
 
-      for (let i = shuffled.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
-      }
+      // ポケモンを重複なしで6匹抽選
+      const selected =
+        shuffleArray(pool).slice(0, 6);
 
-      const selected = shuffled.slice(0, 6);
 
-      const slots = document.querySelectorAll(".pokemon");
+      // 持ち物を重複なしで6個抽選
+      const selectedItems =
+        shuffleArray(itemPool).slice(0, 6);
+
+
+      const slots =
+        document.querySelectorAll(".pokemon");
+
 
       slots.forEach(async (slot, index) => {
 
-  const pokemonName = selected[index];
-
-  slot.innerHTML = `
-    <div class="pokemon-name">${pokemonName}</div>
-  `;
-
-  slot.classList.remove("empty");
+        const pokemonName = selected[index];
+        const itemName = selectedItems[index];
 
 
-  const imageUrl = await getPokemonImage(pokemonName);
+        // 画像を取得する前に名前と持ち物を表示
+        slot.innerHTML = `
+          <div class="pokemon-name">${pokemonName}</div>
+          <div class="pokemon-item">持ち物：${itemName}</div>
+        `;
+
+        slot.classList.remove("empty");
 
 
-  if (imageUrl) {
+        const imageUrl =
+          await getPokemonImage(pokemonName);
 
-    slot.innerHTML = `
-      <img src="${imageUrl}" alt="${pokemonName}">
-      <div class="pokemon-name">${pokemonName}</div>
-    `;
-  }
 
-});
+        // 画像が取得できたら追加
+        if (imageUrl) {
+
+          slot.innerHTML = `
+            <img src="${imageUrl}" alt="${pokemonName}">
+            <div class="pokemon-name">${pokemonName}</div>
+            <div class="pokemon-item">持ち物：${itemName}</div>
+          `;
+        }
+
+      });
+
 
       document.getElementById("message").textContent =
-        "抽選完了！この6匹で構築してみよう。";
+        "抽選完了！6匹と持ち物を決定しました。";
     }
+
 
     function resetDraw() {
 
-      const slots = document.querySelectorAll(".pokemon");
+      const slots =
+        document.querySelectorAll(".pokemon");
 
       slots.forEach(slot => {
+
         slot.textContent = "？";
         slot.classList.add("empty");
+
       });
 
       document.getElementById("message").textContent =
         "選択したルールから、重複なしで6匹を抽選します。";
     }
+
   </script>
 
 </body>
