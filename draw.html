@@ -291,26 +291,26 @@
       display: block;
     }
 
-    .favorites-section {
+    .storage-section {
       margin-top: 38px;
       padding-top: 28px;
       border-top: 1px solid #eee;
     }
 
-    .favorites-title {
+    .storage-title {
       font-size: 20px;
       font-weight: 900;
       margin-bottom: 6px;
     }
 
-    .favorites-subtitle {
+    .storage-subtitle {
       font-size: 12px;
       color: #888;
       margin-bottom: 18px;
       line-height: 1.6;
     }
 
-    .favorites-empty {
+    .storage-empty {
       padding: 22px 15px;
       background: #f7f7f8;
       border-radius: 14px;
@@ -319,7 +319,7 @@
       font-size: 13px;
     }
 
-    .favorite-card {
+    .storage-card {
       border: 1px solid #e5e5e5;
       border-radius: 16px;
       padding: 15px;
@@ -327,27 +327,28 @@
       background: #fff;
     }
 
-    .favorite-date {
+    .storage-date {
       font-size: 11px;
       color: #999;
       margin-bottom: 9px;
     }
 
-    .favorite-team {
+    .storage-team {
       font-size: 13px;
       font-weight: 800;
       line-height: 1.7;
       margin-bottom: 12px;
     }
 
-    .favorite-actions {
+    .storage-actions {
       display: grid;
       grid-template-columns: 1fr 1fr;
       gap: 8px;
     }
 
-    .favorite-load,
-    .favorite-delete {
+    .storage-load,
+    .storage-delete,
+    .history-clear {
       border-radius: 10px;
       padding: 10px 8px;
       font-size: 12px;
@@ -355,16 +356,24 @@
       cursor: pointer;
     }
 
-    .favorite-load {
+    .storage-load {
       border: none;
       background: #222;
       color: #fff;
     }
 
-    .favorite-delete {
+    .storage-delete {
       border: 1px solid #ddd;
       background: #fff;
       color: #666;
+    }
+
+    .history-clear {
+      width: 100%;
+      margin-bottom: 14px;
+      border: 1px solid #ddd;
+      background: #fff;
+      color: #777;
     }
   </style>
 </head>
@@ -378,29 +387,45 @@
   </a>
 
   <header>
-    <div class="logo">🎲 ポケくじ</div>
 
-    <div id="gameName" class="game"></div>
+    <div class="logo">
+      🎲 ポケくじ
+    </div>
 
-    <div id="ruleName" class="rule"></div>
+    <div
+      id="gameName"
+      class="game">
+    </div>
+
+    <div
+      id="ruleName"
+      class="rule">
+    </div>
 
     <div class="rule-change-wrap">
+
       <select
         id="ruleSelect"
         class="rule-select"
         onchange="changeRegulation(this.value)">
       </select>
+
     </div>
+
   </header>
 
+
   <div class="result">
+
     <div class="pokemon empty">？</div>
     <div class="pokemon empty">？</div>
     <div class="pokemon empty">？</div>
     <div class="pokemon empty">？</div>
     <div class="pokemon empty">？</div>
     <div class="pokemon empty">？</div>
+
   </div>
+
 
   <button
     id="drawButton"
@@ -409,12 +434,14 @@
     🎲 6匹を抽選する
   </button>
 
+
   <button
     id="imageButton"
     class="image-button"
     onclick="createShareImage()">
     📸 シェア画像を作る
   </button>
+
 
   <button
     id="shareButton"
@@ -423,12 +450,14 @@
     📤 結果をシェア
   </button>
 
+
   <button
     id="askButton"
     class="ask-button"
     onclick="askOnX()">
     𝕏 この6匹でみんなに相談
   </button>
+
 
   <button
     id="favoriteButton"
@@ -437,37 +466,67 @@
     ⭐ この構築をお気に入り保存
   </button>
 
+
   <button
     class="sub-button"
     onclick="resetDraw()">
     リセット
   </button>
 
+
   <div
     id="sharePreview"
     class="share-preview">
+
     <img
       id="sharePreviewImage"
       alt="ポケくじ シェア画像">
+
   </div>
+
 
   <div
     id="message"
     class="message">
+
     選択したルールから、重複なしで6匹を抽選します。
+
   </div>
 
-  <section class="favorites-section">
 
-    <div class="favorites-title">
+  <section class="storage-section">
+
+    <div class="storage-title">
       ⭐ お気に入り
     </div>
 
-    <div class="favorites-subtitle">
-      このゲーム・レギュレーションで保存した構築を端末内に残せます。
+    <div class="storage-subtitle">
+      このゲーム・レギュレーションで保存した構築です。
     </div>
 
     <div id="favoritesList"></div>
+
+  </section>
+
+
+  <section class="storage-section">
+
+    <div class="storage-title">
+      🕘 抽選履歴
+    </div>
+
+    <div class="storage-subtitle">
+      抽選した構築を最新20件まで自動で保存します。
+    </div>
+
+    <button
+      id="historyClearButton"
+      class="history-clear"
+      onclick="clearCurrentHistory()">
+      履歴をすべて削除
+    </button>
+
+    <div id="historyList"></div>
 
   </section>
 
@@ -496,8 +555,10 @@ const params =
     window.location.search
   );
 
+
 const game =
   params.get("game") || "";
+
 
 const rule =
   params.get("rule") || "";
@@ -519,20 +580,42 @@ const FAVORITES_KEY =
   "pokeKujiFavoritesV1";
 
 
+const HISTORY_KEY =
+  "pokeKujiHistoryV1";
+
+
+const HISTORY_LIMIT =
+  20;
+
+
 let currentTeam = [];
 let currentItems = [];
 let currentNatures = [];
 let currentImageUrls = [];
 
+
 let lockedSlots =
   Array(6).fill(false);
 
-let currentMegaEnabled = false;
-let currentMegaIndex = -1;
-let currentMegaStone = "";
 
-let shareImageBlob = null;
-let previewObjectUrl = null;
+let currentMegaEnabled =
+  false;
+
+
+let currentMegaIndex =
+  -1;
+
+
+let currentMegaStone =
+  "";
+
+
+let shareImageBlob =
+  null;
+
+
+let previewObjectUrl =
+  null;
 
 
 const pokemonNatures = [
@@ -574,6 +657,7 @@ function setupRuleSelector() {
     document.getElementById(
       "ruleSelect"
     );
+
 
   let rules = [];
 
@@ -623,6 +707,7 @@ function setupRuleSelector() {
             ? "selected"
             : "";
 
+
         return `
           <option
             value="${ruleName}"
@@ -656,7 +741,7 @@ function changeRegulation(
     encodeURIComponent(
       newRule
     ) +
-    "&v=8";
+    "&v=9";
 
 
   window.location.href =
@@ -665,7 +750,7 @@ function changeRegulation(
 
 
 /* =========================
-   基本判定
+   基本
 ========================= */
 
 function isChampions() {
@@ -735,12 +820,14 @@ function getPokemonPool() {
       return championsMA;
     }
 
+
     if (
       rule ===
       "レギュレーション M-B"
     ) {
       return championsMB;
     }
+
 
     if (
       rule ===
@@ -760,6 +847,7 @@ function getPokemonPool() {
       return svRegA;
     }
 
+
     if (
       rule ===
       "レギュレーション B"
@@ -767,12 +855,14 @@ function getPokemonPool() {
       return svRegB;
     }
 
+
     if (
       rule ===
       "レギュレーション H"
     ) {
       return svRegH;
     }
+
 
     if (
       rule ===
@@ -798,12 +888,14 @@ function getItemPool() {
       return championsItemsMA;
     }
 
+
     if (
       rule ===
       "レギュレーション M-B"
     ) {
       return championsItemsMB;
     }
+
 
     if (
       rule ===
@@ -823,6 +915,7 @@ function getItemPool() {
       return svItemsA;
     }
 
+
     if (
       rule ===
       "レギュレーション B"
@@ -830,12 +923,14 @@ function getItemPool() {
       return svItemsB;
     }
 
+
     if (
       rule ===
       "レギュレーション H"
     ) {
       return svItemsH;
     }
+
 
     if (
       rule ===
@@ -992,7 +1087,10 @@ function chooseMegaOption(
 function buildNormalTeam(pool) {
 
   const shuffled =
-    shuffleArray(pool);
+    shuffleArray(
+      pool
+    );
+
 
   const team = [];
 
@@ -1032,11 +1130,16 @@ function buildNormalTeam(pool) {
 function buildSVRegJTeam(pool) {
 
   const shuffled =
-    shuffleArray(pool);
+    shuffleArray(
+      pool
+    );
+
 
   const team = [];
 
-  let specialCount = 0;
+
+  let specialCount =
+    0;
 
 
   for (
@@ -1095,6 +1198,7 @@ function buildTeam() {
   const pool =
     getPokemonPool();
 
+
   const itemPool =
     getItemPool();
 
@@ -1104,8 +1208,10 @@ function buildTeam() {
     currentMegaEnabled =
       false;
 
+
     currentMegaIndex =
       -1;
+
 
     currentMegaStone =
       "";
@@ -1137,8 +1243,10 @@ function buildTeam() {
   currentMegaEnabled =
     Math.random() < 0.5;
 
+
   currentMegaIndex =
     -1;
+
 
   currentMegaStone =
     "";
@@ -1261,13 +1369,14 @@ function buildTeam() {
 
 
 /* =========================
-   ロック再抽選
+   ロック抽選
 ========================= */
 
 function buildSVTeamWithLocks() {
 
   const pool =
     getPokemonPool();
+
 
   const nextTeam =
     Array(6).fill("");
@@ -1351,7 +1460,10 @@ function buildSVTeamWithLocks() {
       }
 
 
-      foundIndex = j;
+      foundIndex =
+        j;
+
+
       break;
     }
 
@@ -1388,11 +1500,14 @@ function buildSVTeamWithLocks() {
   currentTeam =
     nextTeam;
 
+
   currentMegaEnabled =
     false;
 
+
   currentMegaIndex =
     -1;
+
 
   currentMegaStone =
     "";
@@ -1406,6 +1521,7 @@ function buildChampionsTeamWithLocks() {
 
   const pool =
     getPokemonPool();
+
 
   const nextTeam =
     Array(6).fill("");
@@ -1430,6 +1546,7 @@ function buildChampionsTeamWithLocks() {
   const oldMegaIndex =
     currentMegaIndex;
 
+
   const oldMegaStone =
     currentMegaStone;
 
@@ -1453,8 +1570,10 @@ function buildChampionsTeamWithLocks() {
     currentMegaEnabled =
       true;
 
+
     currentMegaIndex =
       lockedMegaIndex;
+
 
     currentMegaStone =
       oldMegaStone;
@@ -1464,8 +1583,10 @@ function buildChampionsTeamWithLocks() {
     currentMegaEnabled =
       Math.random() < 0.5;
 
+
     currentMegaIndex =
       -1;
+
 
     currentMegaStone =
       "";
@@ -1488,6 +1609,7 @@ function buildChampionsTeamWithLocks() {
         if (
           !lockedSlots[i]
         ) {
+
           unlockedIndices.push(
             i
           );
@@ -1615,7 +1737,10 @@ function buildChampionsTeamWithLocks() {
       }
 
 
-      foundIndex = j;
+      foundIndex =
+        j;
+
+
       break;
     }
 
@@ -1648,8 +1773,10 @@ function rebuildItemsWithLocks() {
   const itemPool =
     getItemPool();
 
+
   const nextItems =
     Array(6).fill("");
+
 
   const usedItems =
     new Set();
@@ -1846,6 +1973,7 @@ function updateDrawButtonLabel() {
     button.textContent =
       "🎲 6匹を抽選する";
 
+
     return;
   }
 
@@ -1920,8 +2048,10 @@ async function renderSlot(
   const pokemonName =
     currentTeam[index];
 
+
   const itemName =
     currentItems[index];
+
 
   const natureName =
     currentNatures[index];
@@ -2020,7 +2150,9 @@ async function renderSlot(
         class="reroll-button"
         onclick="rerollPokemon(${index})"
         ${isLocked ? "disabled" : ""}>
+
         🔄 この1匹だけ引き直す
+
       </button>
 
       <button
@@ -2032,14 +2164,18 @@ async function renderSlot(
             ? "disabled"
             : ""
         }>
+
         🎒 持ち物だけ引き直す
+
       </button>
 
       <button
         class="nature-button"
         onclick="rerollNature(${index})"
         ${isLocked ? "disabled" : ""}>
+
         🧠 性格だけ引き直す
+
       </button>
 
     </div>
@@ -2082,9 +2218,7 @@ function setDrawCompleteMessage() {
   }
 
 
-  if (
-    isSV()
-  ) {
+  if (isSV()) {
 
     document.getElementById(
       "message"
@@ -2151,6 +2285,7 @@ async function drawPokemon() {
 
   const pool =
     getPokemonPool();
+
 
   const itemPool =
     getItemPool();
@@ -2233,6 +2368,8 @@ async function drawPokemon() {
 
     setDrawCompleteMessage();
 
+    saveCurrentHistory();
+
 
     return;
   }
@@ -2283,6 +2420,8 @@ async function drawPokemon() {
   updateDrawButtonLabel();
 
   setDrawCompleteMessage();
+
+  saveCurrentHistory();
 }
 
 
@@ -2539,6 +2678,9 @@ async function rerollPokemon(
   );
 
 
+  saveCurrentHistory();
+
+
   document.getElementById(
     "message"
   ).textContent =
@@ -2612,6 +2754,9 @@ async function rerollItem(
   );
 
 
+  saveCurrentHistory();
+
+
   document.getElementById(
     "message"
   ).textContent =
@@ -2653,10 +2798,195 @@ async function rerollNature(
   );
 
 
+  saveCurrentHistory();
+
+
   document.getElementById(
     "message"
   ).textContent =
     `${currentTeam[index]}の性格を「${oldNature}」から「${newNature}」に変更しました。`;
+}
+
+
+/* =========================
+   共通保存データ
+========================= */
+
+function createCurrentSnapshot() {
+
+  return {
+
+    game:
+      game,
+
+    rule:
+      rule,
+
+    team:
+      [...currentTeam],
+
+    items:
+      [...currentItems],
+
+    natures:
+      [...currentNatures],
+
+    megaEnabled:
+      currentMegaEnabled,
+
+    megaIndex:
+      currentMegaIndex,
+
+    megaStone:
+      currentMegaStone
+  };
+}
+
+
+function isSameSnapshot(
+  a,
+  b
+) {
+
+  return (
+    a.game === b.game &&
+    a.rule === b.rule &&
+    JSON.stringify(
+      a.team
+    ) ===
+      JSON.stringify(
+        b.team
+      ) &&
+    JSON.stringify(
+      a.items
+    ) ===
+      JSON.stringify(
+        b.items
+      ) &&
+    JSON.stringify(
+      a.natures
+    ) ===
+      JSON.stringify(
+        b.natures
+      ) &&
+    a.megaEnabled ===
+      b.megaEnabled &&
+    a.megaIndex ===
+      b.megaIndex &&
+    a.megaStone ===
+      b.megaStone
+  );
+}
+
+
+function formatSavedDate(
+  timestamp
+) {
+
+  const date =
+    new Date(
+      timestamp
+    );
+
+
+  return (
+    date.getFullYear() +
+    "/" +
+    String(
+      date.getMonth() + 1
+    ).padStart(
+      2,
+      "0"
+    ) +
+    "/" +
+    String(
+      date.getDate()
+    ).padStart(
+      2,
+      "0"
+    ) +
+    " " +
+    String(
+      date.getHours()
+    ).padStart(
+      2,
+      "0"
+    ) +
+    ":" +
+    String(
+      date.getMinutes()
+    ).padStart(
+      2,
+      "0"
+    )
+  );
+}
+
+
+async function applySavedSnapshot(
+  saved,
+  message
+) {
+
+  currentTeam =
+    [...saved.team];
+
+
+  currentItems =
+    [...saved.items];
+
+
+  currentNatures =
+    [...saved.natures];
+
+
+  currentMegaEnabled =
+    Boolean(
+      saved.megaEnabled
+    );
+
+
+  currentMegaIndex =
+    Number.isInteger(
+      saved.megaIndex
+    )
+      ? saved.megaIndex
+      : -1;
+
+
+  currentMegaStone =
+    saved.megaStone || "";
+
+
+  currentImageUrls =
+    Array(6).fill("");
+
+
+  lockedSlots =
+    Array(6).fill(false);
+
+
+  hideOldPreview();
+
+
+  await renderAllSlots();
+
+
+  showResultButtons();
+
+  updateDrawButtonLabel();
+
+
+  document.getElementById(
+    "message"
+  ).textContent =
+    message;
+
+
+  window.scrollTo({
+    top: 0,
+    behavior: "smooth"
+  });
 }
 
 
@@ -2727,47 +3057,6 @@ function getCurrentRuleFavorites() {
 }
 
 
-function isSameFavorite(
-  favorite
-) {
-
-  return (
-    favorite.game === game &&
-    favorite.rule === rule &&
-
-    JSON.stringify(
-      favorite.team
-    ) ===
-    JSON.stringify(
-      currentTeam
-    ) &&
-
-    JSON.stringify(
-      favorite.items
-    ) ===
-    JSON.stringify(
-      currentItems
-    ) &&
-
-    JSON.stringify(
-      favorite.natures
-    ) ===
-    JSON.stringify(
-      currentNatures
-    ) &&
-
-    favorite.megaEnabled ===
-      currentMegaEnabled &&
-
-    favorite.megaIndex ===
-      currentMegaIndex &&
-
-    favorite.megaStone ===
-      currentMegaStone
-  );
-}
-
-
 function saveCurrentFavorite() {
 
   if (
@@ -2781,11 +3070,16 @@ function saveCurrentFavorite() {
     getFavorites();
 
 
+  const snapshot =
+    createCurrentSnapshot();
+
+
   const alreadySaved =
     favorites.some(
       favorite =>
-        isSameFavorite(
-          favorite
+        isSameSnapshot(
+          favorite,
+          snapshot
         )
     );
 
@@ -2804,7 +3098,7 @@ function saveCurrentFavorite() {
   }
 
 
-  const favorite = {
+  favorites.push({
 
     id:
       Date.now().toString() +
@@ -2816,35 +3110,8 @@ function saveCurrentFavorite() {
     createdAt:
       Date.now(),
 
-    game:
-      game,
-
-    rule:
-      rule,
-
-    team:
-      [...currentTeam],
-
-    items:
-      [...currentItems],
-
-    natures:
-      [...currentNatures],
-
-    megaEnabled:
-      currentMegaEnabled,
-
-    megaIndex:
-      currentMegaIndex,
-
-    megaStone:
-      currentMegaStone
-  };
-
-
-  favorites.push(
-    favorite
-  );
+    ...snapshot
+  });
 
 
   saveFavorites(
@@ -2859,57 +3126,6 @@ function saveCurrentFavorite() {
     "message"
   ).textContent =
     "⭐ この構築をお気に入りに保存しました！";
-}
-
-
-function formatFavoriteDate(
-  timestamp
-) {
-
-  const date =
-    new Date(
-      timestamp
-    );
-
-
-  return (
-    date.getFullYear() +
-    "/" +
-
-    String(
-      date.getMonth() + 1
-    ).padStart(
-      2,
-      "0"
-    ) +
-
-    "/" +
-
-    String(
-      date.getDate()
-    ).padStart(
-      2,
-      "0"
-    ) +
-
-    " " +
-
-    String(
-      date.getHours()
-    ).padStart(
-      2,
-      "0"
-    ) +
-
-    ":" +
-
-    String(
-      date.getMinutes()
-    ).padStart(
-      2,
-      "0"
-    )
-  );
 }
 
 
@@ -2931,7 +3147,7 @@ function renderFavorites() {
 
     list.innerHTML =
       `
-        <div class="favorites-empty">
+        <div class="storage-empty">
           まだお気に入りはありません。
         </div>
       `;
@@ -2966,30 +3182,30 @@ function renderFavorites() {
 
 
         return `
-          <div class="favorite-card">
+          <div class="storage-card">
 
-            <div class="favorite-date">
-              ${formatFavoriteDate(
+            <div class="storage-date">
+              ${formatSavedDate(
                 favorite.createdAt
               )}
             </div>
 
             ${megaText}
 
-            <div class="favorite-team">
+            <div class="storage-team">
               ${teamText}
             </div>
 
-            <div class="favorite-actions">
+            <div class="storage-actions">
 
               <button
-                class="favorite-load"
+                class="storage-load"
                 onclick="loadFavorite('${favorite.id}')">
                 呼び出す
               </button>
 
               <button
-                class="favorite-delete"
+                class="storage-delete"
                 onclick="deleteFavorite('${favorite.id}')">
                 削除
               </button>
@@ -3019,67 +3235,10 @@ async function loadFavorite(
   }
 
 
-  if (
-    favorite.game !== game ||
-    favorite.rule !== rule
-  ) {
-    return;
-  }
-
-
-  currentTeam =
-    [...favorite.team];
-
-  currentItems =
-    [...favorite.items];
-
-  currentNatures =
-    [...favorite.natures];
-
-  currentMegaEnabled =
-    Boolean(
-      favorite.megaEnabled
-    );
-
-  currentMegaIndex =
-    Number.isInteger(
-      favorite.megaIndex
-    )
-      ? favorite.megaIndex
-      : -1;
-
-  currentMegaStone =
-    favorite.megaStone || "";
-
-
-  currentImageUrls =
-    Array(6).fill("");
-
-  lockedSlots =
-    Array(6).fill(false);
-
-
-  hideOldPreview();
-
-
-  await renderAllSlots();
-
-
-  showResultButtons();
-
-  updateDrawButtonLabel();
-
-
-  document.getElementById(
-    "message"
-  ).textContent =
-    "⭐ お気に入りの構築を呼び出しました。";
-
-
-  window.scrollTo({
-    top: 0,
-    behavior: "smooth"
-  });
+  await applySavedSnapshot(
+    favorite,
+    "⭐ お気に入りの構築を呼び出しました。"
+  );
 }
 
 
@@ -3106,6 +3265,378 @@ function deleteFavorite(
     "message"
   ).textContent =
     "お気に入りを削除しました。";
+}
+
+
+/* =========================
+   抽選履歴
+========================= */
+
+function getHistory() {
+
+  try {
+
+    const saved =
+      localStorage.getItem(
+        HISTORY_KEY
+      );
+
+
+    if (!saved) {
+      return [];
+    }
+
+
+    const parsed =
+      JSON.parse(
+        saved
+      );
+
+
+    return Array.isArray(
+      parsed
+    )
+      ? parsed
+      : [];
+
+  } catch (error) {
+
+    return [];
+  }
+}
+
+
+function saveHistory(
+  history
+) {
+
+  localStorage.setItem(
+    HISTORY_KEY,
+    JSON.stringify(
+      history
+    )
+  );
+}
+
+
+function getCurrentRuleHistory() {
+
+  return getHistory()
+    .filter(
+      item =>
+        item.game === game &&
+        item.rule === rule
+    )
+    .sort(
+      (a, b) =>
+        b.createdAt -
+        a.createdAt
+    );
+}
+
+
+function saveCurrentHistory() {
+
+  if (
+    currentTeam.length !== 6
+  ) {
+    return;
+  }
+
+
+  const allHistory =
+    getHistory();
+
+
+  const snapshot =
+    createCurrentSnapshot();
+
+
+  const currentRuleHistory =
+    allHistory
+      .filter(
+        item =>
+          item.game === game &&
+          item.rule === rule
+      )
+      .sort(
+        (a, b) =>
+          b.createdAt -
+          a.createdAt
+      );
+
+
+  const latest =
+    currentRuleHistory[0];
+
+
+  if (
+    latest &&
+    isSameSnapshot(
+      latest,
+      snapshot
+    )
+  ) {
+
+    return;
+  }
+
+
+  const newEntry = {
+
+    id:
+      Date.now().toString() +
+      "-" +
+      Math.random()
+        .toString(36)
+        .slice(2, 8),
+
+    createdAt:
+      Date.now(),
+
+    ...snapshot
+  };
+
+
+  let nextHistory = [
+    newEntry,
+    ...allHistory
+  ];
+
+
+  const sameRule =
+    nextHistory
+      .filter(
+        item =>
+          item.game === game &&
+          item.rule === rule
+      )
+      .sort(
+        (a, b) =>
+          b.createdAt -
+          a.createdAt
+      );
+
+
+  const keepIds =
+    new Set(
+      sameRule
+        .slice(
+          0,
+          HISTORY_LIMIT
+        )
+        .map(
+          item =>
+            item.id
+        )
+    );
+
+
+  nextHistory =
+    nextHistory.filter(
+      item => {
+
+        if (
+          item.game !== game ||
+          item.rule !== rule
+        ) {
+          return true;
+        }
+
+
+        return keepIds.has(
+          item.id
+        );
+      }
+    );
+
+
+  saveHistory(
+    nextHistory
+  );
+
+
+  renderHistory();
+}
+
+
+function renderHistory() {
+
+  const list =
+    document.getElementById(
+      "historyList"
+    );
+
+
+  const clearButton =
+    document.getElementById(
+      "historyClearButton"
+    );
+
+
+  const history =
+    getCurrentRuleHistory();
+
+
+  if (
+    history.length === 0
+  ) {
+
+    clearButton.style.display =
+      "none";
+
+
+    list.innerHTML =
+      `
+        <div class="storage-empty">
+          まだ抽選履歴はありません。
+        </div>
+      `;
+
+
+    return;
+  }
+
+
+  clearButton.style.display =
+    "block";
+
+
+  list.innerHTML =
+    history.map(
+      item => {
+
+        const teamText =
+          item.team.join(
+            " / "
+          );
+
+
+        const megaText =
+          item.megaEnabled &&
+          item.megaIndex >= 0
+
+            ? `
+              <div class="mega-label">
+                ⭐ メガ枠：
+                ${item.team[item.megaIndex]}
+              </div>
+            `
+
+            : "";
+
+
+        return `
+          <div class="storage-card">
+
+            <div class="storage-date">
+              ${formatSavedDate(
+                item.createdAt
+              )}
+            </div>
+
+            ${megaText}
+
+            <div class="storage-team">
+              ${teamText}
+            </div>
+
+            <div class="storage-actions">
+
+              <button
+                class="storage-load"
+                onclick="loadHistory('${item.id}')">
+                呼び出す
+              </button>
+
+              <button
+                class="storage-delete"
+                onclick="deleteHistory('${item.id}')">
+                削除
+              </button>
+
+            </div>
+
+          </div>
+        `;
+      }
+    ).join("");
+}
+
+
+async function loadHistory(
+  id
+) {
+
+  const item =
+    getHistory().find(
+      historyItem =>
+        historyItem.id === id
+    );
+
+
+  if (!item) {
+    return;
+  }
+
+
+  await applySavedSnapshot(
+    item,
+    "🕘 履歴の構築を呼び出しました。"
+  );
+}
+
+
+function deleteHistory(
+  id
+) {
+
+  const history =
+    getHistory().filter(
+      item =>
+        item.id !== id
+    );
+
+
+  saveHistory(
+    history
+  );
+
+
+  renderHistory();
+
+
+  document.getElementById(
+    "message"
+  ).textContent =
+    "履歴を1件削除しました。";
+}
+
+
+function clearCurrentHistory() {
+
+  const history =
+    getHistory().filter(
+      item =>
+        !(
+          item.game === game &&
+          item.rule === rule
+        )
+    );
+
+
+  saveHistory(
+    history
+  );
+
+
+  renderHistory();
+
+
+  document.getElementById(
+    "message"
+  ).textContent =
+    "このレギュレーションの履歴をすべて削除しました。";
 }
 
 
@@ -3224,6 +3755,7 @@ async function createShareImage() {
   canvas.width =
     1080;
 
+
   canvas.height =
     1350;
 
@@ -3320,17 +3852,22 @@ async function createShareImage() {
   const cardWidth =
     430;
 
+
   const cardHeight =
     285;
+
 
   const startX =
     90;
 
+
   const startY =
     235;
 
+
   const gapX =
     40;
+
 
   const gapY =
     25;
@@ -3808,11 +4345,14 @@ function resetDraw() {
   currentMegaEnabled =
     false;
 
+
   currentMegaIndex =
     -1;
 
+
   currentMegaStone =
     "";
+
 
   shareImageBlob =
     null;
@@ -3870,6 +4410,7 @@ function resetDraw() {
 
   hideOldPreview();
 
+
   updateDrawButtonLabel();
 
 
@@ -3887,6 +4428,8 @@ function resetDraw() {
 setupRuleSelector();
 
 renderFavorites();
+
+renderHistory();
 
 </script>
 
