@@ -91,13 +91,7 @@
       text-align: center;
     }
 
-    .pokemon-item {
-      font-size: 12px;
-      font-weight: 600;
-      color: #666;
-      text-align: center;
-    }
-
+    .pokemon-item,
     .pokemon-nature {
       font-size: 12px;
       font-weight: 600;
@@ -108,7 +102,7 @@
     .reroll-button {
       width: 100%;
       margin-top: 4px;
-      border: none;
+      border: 1px solid #ddd;
       border-radius: 10px;
       padding: 8px 10px;
       background: #fff;
@@ -116,11 +110,6 @@
       font-size: 11px;
       font-weight: 700;
       cursor: pointer;
-      border: 1px solid #ddd;
-    }
-
-    .reroll-button:hover {
-      background: #fafafa;
     }
 
     .pokemon.empty {
@@ -129,33 +118,36 @@
       font-weight: 800;
     }
 
-    .draw-button {
+    .draw-button,
+    .share-button,
+    .sub-button {
       width: 100%;
-      border: none;
       border-radius: 16px;
-      padding: 18px;
-      background: #222;
-      color: #fff;
-      font-size: 17px;
+      padding: 16px;
+      font-size: 16px;
       font-weight: 800;
       cursor: pointer;
+    }
+
+    .draw-button {
+      border: none;
+      background: #222;
+      color: #fff;
       margin-bottom: 12px;
     }
 
-    .draw-button:hover {
-      opacity: 0.88;
+    .share-button {
+      border: none;
+      background: #4a90e2;
+      color: #fff;
+      margin-bottom: 12px;
+      display: none;
     }
 
     .sub-button {
-      width: 100%;
       border: 1px solid #ddd;
-      border-radius: 16px;
-      padding: 15px;
       background: #fff;
       color: #444;
-      font-size: 15px;
-      font-weight: 700;
-      cursor: pointer;
     }
 
     .message {
@@ -195,6 +187,10 @@
       🎲 6匹を抽選する
     </button>
 
+    <button id="shareButton" class="share-button" onclick="shareResult()">
+      📤 結果をシェア
+    </button>
+
     <button class="sub-button" onclick="resetDraw()">
       リセット
     </button>
@@ -221,11 +217,9 @@
     document.getElementById("gameName").textContent = game;
     document.getElementById("ruleName").textContent = rule;
 
-
     let currentTeam = [];
     let currentItems = [];
     let currentNatures = [];
-
 
     function getPokemonPool() {
       if (game === "Pokémon Champions") {
@@ -245,7 +239,6 @@
       return [];
     }
 
-
     function getItemPool() {
       if (game === "Pokémon Champions") {
         if (rule === "レギュレーション M-A") {
@@ -263,7 +256,6 @@
 
       return [];
     }
-
 
     const pokemonNatures = [
       "さみしがり",
@@ -293,13 +285,11 @@
       "まじめ"
     ];
 
-
     function getRandomNature() {
       return pokemonNatures[
         Math.floor(Math.random() * pokemonNatures.length)
       ];
     }
-
 
     function shuffleArray(array) {
       const shuffled = [...array];
@@ -313,7 +303,6 @@
 
       return shuffled;
     }
-
 
     async function renderSlot(index) {
       const slots =
@@ -352,7 +341,6 @@
       }
     }
 
-
     async function drawPokemon() {
       const pool = getPokemonPool();
       const itemPool = getItemPool();
@@ -380,10 +368,12 @@
         renderSlot(i);
       }
 
+      document.getElementById("shareButton").style.display =
+        "block";
+
       document.getElementById("message").textContent =
         "抽選完了！6匹・持ち物・性格を決定しました。";
     }
-
 
     async function rerollPokemon(index) {
       const pool = getPokemonPool();
@@ -399,13 +389,11 @@
       const availablePokemon =
         pool.filter(name => !usedPokemon.includes(name));
 
-
       const usedItems =
         currentItems.filter((_, i) => i !== index);
 
       const availableItems =
         itemPool.filter(item => !usedItems.includes(item));
-
 
       if (
         availablePokemon.length === 0 ||
@@ -413,7 +401,6 @@
       ) {
         return;
       }
-
 
       const oldPokemon =
         currentTeam[index];
@@ -423,7 +410,6 @@
           Math.floor(Math.random() * availablePokemon.length)
         ];
 
-
       if (availablePokemon.length > 1) {
         while (newPokemon === oldPokemon) {
           newPokemon =
@@ -432,7 +418,6 @@
             ];
         }
       }
-
 
       currentTeam[index] = newPokemon;
 
@@ -444,14 +429,52 @@
       currentNatures[index] =
         getRandomNature();
 
-
       await renderSlot(index);
-
 
       document.getElementById("message").textContent =
         `${oldPokemon}を引き直しました。`;
     }
 
+    async function shareResult() {
+      if (currentTeam.length !== 6) {
+        return;
+      }
+
+      const teamText =
+        currentTeam.join(" / ");
+
+      const shareText =
+`🎲 ポケくじでランダム構築！
+
+${rule}
+
+${teamText}
+
+#ポケくじ #ポケモンチャンピオンズ`;
+
+      const shareUrl =
+        "https://nico25dayo.github.io/poke-kuji/";
+
+      if (navigator.share) {
+        try {
+          await navigator.share({
+            title: "ポケくじ",
+            text: shareText,
+            url: shareUrl
+          });
+        } catch (error) {
+          console.log("共有をキャンセルしました。");
+        }
+      } else {
+        const copyText =
+          shareText + "\n" + shareUrl;
+
+        await navigator.clipboard.writeText(copyText);
+
+        document.getElementById("message").textContent =
+          "共有文をコピーしました！";
+      }
+    }
 
     function resetDraw() {
       currentTeam = [];
@@ -465,6 +488,9 @@
         slot.textContent = "？";
         slot.classList.add("empty");
       });
+
+      document.getElementById("shareButton").style.display =
+        "none";
 
       document.getElementById("message").textContent =
         "選択したルールから、重複なしで6匹を抽選します。";
