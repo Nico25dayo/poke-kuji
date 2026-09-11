@@ -4,12 +4,16 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="theme-color" content="#ef5350">
+
   <title>ポケくじ</title>
-<link rel="manifest" href="./manifest.json">
-<link rel="apple-touch-icon" href="./apple-touch-icon.png">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="default">
-<meta name="apple-mobile-web-app-title" content="ポケくじ">
+
+  <link rel="manifest" href="./manifest.json">
+  <link rel="apple-touch-icon" href="./apple-touch-icon.png">
+
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="ポケくじ">
+
   <style>
     * {
       box-sizing: border-box;
@@ -121,6 +125,34 @@
       cursor: not-allowed;
     }
 
+    .sub-menu {
+      display: none;
+      padding-left: 10px;
+      margin-top: 6px;
+    }
+
+    .sub-menu.show {
+      display: block;
+    }
+
+    .sub-option {
+      width: 100%;
+      padding: 13px 15px;
+      margin-top: 7px;
+      border: none;
+      border-radius: 10px;
+      background: #fafafa;
+      border: 1px solid #e7e7e7;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      text-align: left;
+    }
+
+    .sub-option:hover {
+      background: #f1f2f4;
+    }
+
     .selected-box {
       display: none;
       margin-top: 28px;
@@ -174,154 +206,225 @@
 
 <body>
 
-  <main class="app">
+<main class="app">
 
-    <header>
-      <div class="logo">🎲 ポケくじ</div>
+  <header>
+    <div class="logo">🎲 ポケくじ</div>
 
-      <div class="subtitle">
-        ランダムから始まる、いつもと違うバトル。
-      </div>
-    </header>
-
-    <div class="section-title">
-      ゲームを選択
+    <div class="subtitle">
+      ランダムから始まる、いつもと違うバトル。
     </div>
+  </header>
 
 
-    <!-- Pokémon Champions -->
-    <div class="game-card">
+  <div class="section-title">
+    ゲームを選択
+  </div>
 
-      <button class="game-button" onclick="toggleMenu(this)">
-        <span>Pokémon Champions</span>
-        <span class="arrow">▼</span>
+
+  <!-- Pokémon Champions -->
+  <div class="game-card">
+
+    <button class="game-button" onclick="toggleMenu(this)">
+      <span>Pokémon Champions</span>
+      <span class="arrow">▼</span>
+    </button>
+
+    <div class="game-menu">
+
+      <button
+        class="option"
+        onclick="selectGame('Pokémon Champions', 'レギュレーション M-A')">
+        レギュレーション M-A
       </button>
 
-      <div class="game-menu">
-
-        <button
-          class="option"
-          onclick="selectGame('Pokémon Champions', 'レギュレーション M-A')">
-          レギュレーション M-A
-        </button>
-
-        <button
-          class="option"
-          onclick="selectGame('Pokémon Champions', 'レギュレーション M-B')">
-          レギュレーション M-B
-        </button>
-
-        <button
-          class="option"
-          onclick="selectGame('Pokémon Champions', 'レギュレーション M-C')">
-          レギュレーション M-C
-        </button>
-
-      </div>
-    </div>
-
-
-    <!-- Pokémon Game Series -->
-    <div class="game-card">
-
-      <button class="game-button" onclick="toggleMenu(this)">
-        <span>ゲームシリーズ</span>
-        <span class="arrow">▼</span>
+      <button
+        class="option"
+        onclick="selectGame('Pokémon Champions', 'レギュレーション M-B')">
+        レギュレーション M-B
       </button>
 
-      <div class="game-menu">
-
-        <button
-          class="option"
-          onclick="selectGame('スカーレット・バイオレット', 'ルール選択')">
-          スカーレット・バイオレット
-        </button>
-
-        <button class="option coming" disabled>
-          ソード・シールド　― 今後対応予定
-        </button>
-
-      </div>
-    </div>
-
-
-    <!-- 選択結果 -->
-    <div id="selectedBox" class="selected-box">
-
-      <div class="selected-label">
-        選択中
-      </div>
-
-      <div id="selectedTitle" class="selected-title">
-      </div>
-
-      <button class="draw-button" onclick="goToDraw()">
-        🎲 ポケくじを引く
+      <button
+        class="option"
+        onclick="selectGame('Pokémon Champions', 'レギュレーション M-C')">
+        レギュレーション M-C
       </button>
 
     </div>
+  </div>
 
 
-    <div class="footer">
-      ※非公式のファン向けツールです。<br>
-      各ゲーム・作品の権利は各権利者に帰属します。
+  <!-- ゲームシリーズ -->
+  <div class="game-card">
+
+    <button class="game-button" onclick="toggleMenu(this)">
+      <span>ゲームシリーズ</span>
+      <span class="arrow">▼</span>
+    </button>
+
+    <div class="game-menu">
+
+      <!-- Scarlet / Violet -->
+      <button
+        class="option"
+        onclick="toggleSubMenu('svMenu')">
+        スカーレット・バイオレット
+      </button>
+
+      <div
+        id="svMenu"
+        class="sub-menu">
+
+        <button
+          class="sub-option"
+          onclick="selectGame('スカーレット・バイオレット', 'レギュレーション A')">
+          レギュレーション A
+        </button>
+
+        <button
+          class="sub-option"
+          onclick="selectGame('スカーレット・バイオレット', 'レギュレーション B')">
+          レギュレーション B
+        </button>
+
+        <button
+          class="sub-option"
+          onclick="selectGame('スカーレット・バイオレット', 'レギュレーション H')">
+          レギュレーション H
+        </button>
+
+        <button
+          class="sub-option"
+          onclick="selectGame('スカーレット・バイオレット', 'レギュレーション J')">
+          レギュレーション J
+        </button>
+
+      </div>
+
+
+      <!-- Sword / Shield -->
+      <button
+        class="option coming"
+        disabled>
+        ソード・シールド ― 今後対応予定
+      </button>
+
+    </div>
+  </div>
+
+
+  <!-- 選択結果 -->
+  <div
+    id="selectedBox"
+    class="selected-box">
+
+    <div class="selected-label">
+      選択中
     </div>
 
-  </main>
+    <div
+      id="selectedTitle"
+      class="selected-title">
+    </div>
+
+    <button
+      class="draw-button"
+      onclick="goToDraw()">
+      🎲 ポケくじを引く
+    </button>
+
+  </div>
 
 
-  <script>
+  <div class="footer">
+    ※非公式のファン向けツールです。<br>
+    各ゲーム・作品の権利は各権利者に帰属します。
+  </div>
 
-    let selectedGame = "";
-    let selectedRule = "";
+</main>
 
 
-    function toggleMenu(button) {
+<script>
 
-      const card = button.parentElement;
+  let selectedGame = "";
+  let selectedRule = "";
 
-      card.classList.toggle("open");
 
+  function toggleMenu(button) {
+
+    const card =
+      button.parentElement;
+
+    card.classList.toggle("open");
+  }
+
+
+  function toggleSubMenu(id) {
+
+    const menu =
+      document.getElementById(id);
+
+    if (!menu) {
+      return;
     }
 
+    menu.classList.toggle("show");
+  }
 
-    function selectGame(game, rule) {
 
-      selectedGame = game;
-      selectedRule = rule;
+  function selectGame(game, rule) {
 
-      const selectedBox =
-        document.getElementById("selectedBox");
+    selectedGame =
+      game;
 
-      const selectedTitle =
-        document.getElementById("selectedTitle");
+    selectedRule =
+      rule;
 
-      selectedTitle.textContent =
-        game + " / " + rule;
+    const selectedBox =
+      document.getElementById(
+        "selectedBox"
+      );
 
-      selectedBox.classList.add("show");
+    const selectedTitle =
+      document.getElementById(
+        "selectedTitle"
+      );
 
+    selectedTitle.textContent =
+      game +
+      " / " +
+      rule;
+
+    selectedBox.classList.add(
+      "show"
+    );
+  }
+
+
+  function goToDraw() {
+
+    if (!selectedGame) {
+      return;
     }
 
+    const url =
+      "draw.html?game=" +
+      encodeURIComponent(
+        selectedGame
+      ) +
+      "&rule=" +
+      encodeURIComponent(
+        selectedRule
+      ) +
+      "&v=4";
 
-    function goToDraw() {
+    window.location.href =
+      url;
+  }
 
-      if (!selectedGame) {
-        return;
-      }
+</script>
 
-      const url =
-        "draw.html?game=" +
-        encodeURIComponent(selectedGame) +
-        "&rule=" +
-        encodeURIComponent(selectedRule) +
-        "&v=3";
-
-      window.location.href = url;
-
-    }
-
-  </script>
 <script src="./pwa.js"></script>
+
 </body>
 </html>
