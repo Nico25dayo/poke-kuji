@@ -228,16 +228,29 @@
 
       const slots = document.querySelectorAll(".pokemon");
 
-      slots.forEach((slot, index) => {
+      slots.forEach(async (slot, index) => {
+
   const pokemonName = selected[index];
-  const imageUrl = getPokemonImage(pokemonName);
 
   slot.innerHTML = `
-    ${imageUrl ? `<img src="${imageUrl}" alt="${pokemonName}">` : ""}
     <div class="pokemon-name">${pokemonName}</div>
   `;
 
   slot.classList.remove("empty");
+
+
+  const imageUrl = await getPokemonImage(pokemonName);
+
+
+  if (imageUrl) {
+
+    slot.innerHTML = `
+      <img src="${imageUrl}" alt="${pokemonName}">
+      <div class="pokemon-name">${pokemonName}</div>
+    `;
+  }
+
+});
 });
       document.getElementById("message").textContent =
         "抽選完了！この6匹で構築してみよう。";
