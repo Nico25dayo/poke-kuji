@@ -65,17 +65,16 @@
     }
 
     .pokemon {
-      min-height: 150px;
+      min-height: 170px;
       border-radius: 16px;
       background: #f3f4f6;
       display: flex;
       flex-direction: column;
       justify-content: center;
       align-items: center;
-      gap: 8px;
+      gap: 6px;
       padding: 14px;
       text-align: center;
-      font-weight: 800;
       color: #333;
       line-height: 1.5;
     }
@@ -99,9 +98,17 @@
       text-align: center;
     }
 
+    .pokemon-nature {
+      font-size: 12px;
+      font-weight: 600;
+      color: #666;
+      text-align: center;
+    }
+
     .pokemon.empty {
       color: #aaa;
       font-size: 28px;
+      font-weight: 800;
     }
 
     .draw-button {
@@ -180,7 +187,6 @@
 
   </main>
 
-
   <script src="champions-ma.js"></script>
   <script src="champions-mb.js"></script>
   <script src="champions-mc.js"></script>
@@ -240,12 +246,51 @@
     }
 
 
+    const pokemonNatures = [
+      "さみしがり",
+      "いじっぱり",
+      "やんちゃ",
+      "ゆうかん",
+      "ずぶとい",
+      "わんぱく",
+      "のうてんき",
+      "のんき",
+      "ひかえめ",
+      "おっとり",
+      "うっかりや",
+      "れいせい",
+      "おだやか",
+      "おとなしい",
+      "しんちょう",
+      "なまいき",
+      "おくびょう",
+      "せっかち",
+      "ようき",
+      "むじゃき",
+      "てれや",
+      "がんばりや",
+      "すなお",
+      "きまぐれ",
+      "まじめ"
+    ];
+
+
+    function getRandomNature() {
+
+      return pokemonNatures[
+        Math.floor(Math.random() * pokemonNatures.length)
+      ];
+    }
+
+
     function shuffleArray(array) {
 
       const shuffled = [...array];
 
       for (let i = shuffled.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
+
+        const j =
+          Math.floor(Math.random() * (i + 1));
 
         [shuffled[i], shuffled[j]] =
           [shuffled[j], shuffled[i]];
@@ -287,28 +332,32 @@
 
         const pokemonName = selected[index];
         const itemName = selectedItems[index];
+        const natureName = getRandomNature();
 
 
-        // 画像を取得する前に名前と持ち物を表示
+        // 画像取得前
         slot.innerHTML = `
           <div class="pokemon-name">${pokemonName}</div>
           <div class="pokemon-item">持ち物：${itemName}</div>
+          <div class="pokemon-nature">性格：${natureName}</div>
         `;
 
         slot.classList.remove("empty");
 
 
+        // ポケモン画像取得
         const imageUrl =
           await getPokemonImage(pokemonName);
 
 
-        // 画像が取得できたら追加
+        // 画像取得成功時
         if (imageUrl) {
 
           slot.innerHTML = `
             <img src="${imageUrl}" alt="${pokemonName}">
             <div class="pokemon-name">${pokemonName}</div>
             <div class="pokemon-item">持ち物：${itemName}</div>
+            <div class="pokemon-nature">性格：${natureName}</div>
           `;
         }
 
@@ -316,7 +365,7 @@
 
 
       document.getElementById("message").textContent =
-        "抽選完了！6匹と持ち物を決定しました。";
+        "抽選完了！6匹・持ち物・性格を決定しました。";
     }
 
 
@@ -331,6 +380,7 @@
         slot.classList.add("empty");
 
       });
+
 
       document.getElementById("message").textContent =
         "選択したルールから、重複なしで6匹を抽選します。";
