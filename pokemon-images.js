@@ -370,26 +370,11 @@ async function getPokemonImage(name) {
     // ドット絵だけ使う
     // =========================
 
-    // Pokémon Champions用
-    const championsSprite =
-      data.sprites
-        ?.versions
-        ?.["generation-ix"]
-        ?.["champions"]
-        ?.front_default;
+    // ドット絵のみ使用
+const defaultSprite =
+  data.sprites?.front_default;
 
-
-    // 通常ドット絵
-    const defaultSprite =
-      data.sprites
-        ?.front_default;
-
-
-    return (
-      championsSprite ||
-      defaultSprite ||
-      ""
-    );
+return defaultSprite || "";
 
 
   } catch (error) {
