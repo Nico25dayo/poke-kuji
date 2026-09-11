@@ -3,11 +3,13 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#ef5350">
+
   <title>ポケくじ - 抽選</title>
 
   <link rel="manifest" href="./manifest.json">
-  <meta name="theme-color" content="#ef5350">
   <link rel="apple-touch-icon" href="./apple-touch-icon.png">
+
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="apple-mobile-web-app-title" content="ポケくじ">
@@ -64,6 +66,26 @@
       font-weight: 800;
     }
 
+    .rule-change-wrap {
+      margin-top: 18px;
+      display: flex;
+      justify-content: center;
+    }
+
+    .rule-select {
+      width: 100%;
+      max-width: 300px;
+      padding: 13px 38px 13px 15px;
+      border: 1px solid #ddd;
+      border-radius: 13px;
+      background: #fff;
+      color: #333;
+      font-size: 14px;
+      font-weight: 800;
+      text-align: center;
+      cursor: pointer;
+    }
+
     .result {
       display: grid;
       grid-template-columns: 1fr 1fr;
@@ -83,7 +105,6 @@
       padding: 14px;
       text-align: center;
       position: relative;
-      transition: .15s ease;
     }
 
     .pokemon.mega {
@@ -176,7 +197,7 @@
     }
 
     button:disabled {
-      opacity: .4;
+      opacity: 0.4;
       cursor: default;
     }
 
@@ -358,8 +379,18 @@
 
   <header>
     <div class="logo">🎲 ポケくじ</div>
+
     <div id="gameName" class="game"></div>
+
     <div id="ruleName" class="rule"></div>
+
+    <div class="rule-change-wrap">
+      <select
+        id="ruleSelect"
+        class="rule-select"
+        onchange="changeRegulation(this.value)">
+      </select>
+    </div>
   </header>
 
   <div class="result">
@@ -371,39 +402,63 @@
     <div class="pokemon empty">？</div>
   </div>
 
-  <button id="drawButton" class="draw-button" onclick="drawPokemon()">
+  <button
+    id="drawButton"
+    class="draw-button"
+    onclick="drawPokemon()">
     🎲 6匹を抽選する
   </button>
 
-  <button id="imageButton" class="image-button" onclick="createShareImage()">
+  <button
+    id="imageButton"
+    class="image-button"
+    onclick="createShareImage()">
     📸 シェア画像を作る
   </button>
 
-  <button id="shareButton" class="share-button" onclick="shareResult()">
+  <button
+    id="shareButton"
+    class="share-button"
+    onclick="shareResult()">
     📤 結果をシェア
   </button>
 
-  <button id="askButton" class="ask-button" onclick="askOnX()">
+  <button
+    id="askButton"
+    class="ask-button"
+    onclick="askOnX()">
     𝕏 この6匹でみんなに相談
   </button>
 
-  <button id="favoriteButton" class="favorite-button" onclick="saveCurrentFavorite()">
+  <button
+    id="favoriteButton"
+    class="favorite-button"
+    onclick="saveCurrentFavorite()">
     ⭐ この構築をお気に入り保存
   </button>
 
-  <button class="sub-button" onclick="resetDraw()">
+  <button
+    class="sub-button"
+    onclick="resetDraw()">
     リセット
   </button>
 
-  <div id="sharePreview" class="share-preview">
-    <img id="sharePreviewImage" alt="ポケくじ シェア画像">
+  <div
+    id="sharePreview"
+    class="share-preview">
+    <img
+      id="sharePreviewImage"
+      alt="ポケくじ シェア画像">
   </div>
 
-  <div id="message" class="message">
+  <div
+    id="message"
+    class="message">
     選択したルールから、重複なしで6匹を抽選します。
   </div>
 
   <section class="favorites-section">
+
     <div class="favorites-title">
       ⭐ お気に入り
     </div>
@@ -413,6 +468,7 @@
     </div>
 
     <div id="favoritesList"></div>
+
   </section>
 
 </main>
@@ -434,16 +490,33 @@
 
 
 <script>
-const params = new URLSearchParams(window.location.search);
 
-const game = params.get("game") || "";
-const rule = params.get("rule") || "";
+const params =
+  new URLSearchParams(
+    window.location.search
+  );
 
-document.getElementById("gameName").textContent = game;
-document.getElementById("ruleName").textContent = rule;
+const game =
+  params.get("game") || "";
+
+const rule =
+  params.get("rule") || "";
 
 
-const FAVORITES_KEY = "pokeKujiFavoritesV1";
+document.getElementById(
+  "gameName"
+).textContent =
+  game;
+
+
+document.getElementById(
+  "ruleName"
+).textContent =
+  rule;
+
+
+const FAVORITES_KEY =
+  "pokeKujiFavoritesV1";
 
 
 let currentTeam = [];
@@ -451,7 +524,8 @@ let currentItems = [];
 let currentNatures = [];
 let currentImageUrls = [];
 
-let lockedSlots = Array(6).fill(false);
+let lockedSlots =
+  Array(6).fill(false);
 
 let currentMegaEnabled = false;
 let currentMegaIndex = -1;
@@ -490,34 +564,156 @@ const pokemonNatures = [
 ];
 
 
+/* =========================
+   レギュレーション変更
+========================= */
+
+function setupRuleSelector() {
+
+  const select =
+    document.getElementById(
+      "ruleSelect"
+    );
+
+  let rules = [];
+
+
+  if (
+    game ===
+    "Pokémon Champions"
+  ) {
+
+    rules = [
+      "レギュレーション M-A",
+      "レギュレーション M-B",
+      "レギュレーション M-C"
+    ];
+
+  } else if (
+    game ===
+    "スカーレット・バイオレット"
+  ) {
+
+    rules = [
+      "レギュレーション A",
+      "レギュレーション B",
+      "レギュレーション H",
+      "レギュレーション J"
+    ];
+  }
+
+
+  if (
+    rules.length === 0
+  ) {
+
+    select.style.display =
+      "none";
+
+    return;
+  }
+
+
+  select.innerHTML =
+    rules.map(
+      ruleName => {
+
+        const selected =
+          ruleName === rule
+            ? "selected"
+            : "";
+
+        return `
+          <option
+            value="${ruleName}"
+            ${selected}>
+            ${ruleName}
+          </option>
+        `;
+      }
+    ).join("");
+}
+
+
+function changeRegulation(
+  newRule
+) {
+
+  if (
+    !newRule ||
+    newRule === rule
+  ) {
+    return;
+  }
+
+
+  const url =
+    "draw.html?game=" +
+    encodeURIComponent(
+      game
+    ) +
+    "&rule=" +
+    encodeURIComponent(
+      newRule
+    ) +
+    "&v=8";
+
+
+  window.location.href =
+    url;
+}
+
+
+/* =========================
+   基本判定
+========================= */
+
 function isChampions() {
-  return game === "Pokémon Champions";
+
+  return (
+    game ===
+    "Pokémon Champions"
+  );
 }
 
 
 function isSV() {
-  return game === "スカーレット・バイオレット";
+
+  return (
+    game ===
+    "スカーレット・バイオレット"
+  );
 }
 
 
 function isSVRegJ() {
-  return isSV() && rule === "レギュレーション J";
+
+  return (
+    isSV() &&
+    rule ===
+      "レギュレーション J"
+  );
 }
 
 
 function getGameHashtag() {
+
   return isSV()
     ? "#ポケモンSV"
     : "#ポケモンチャンピオンズ";
 }
 
 
-function getRandomNature(exclude = "") {
+function getRandomNature(
+  exclude = ""
+) {
 
   const available =
     pokemonNatures.filter(
-      nature => nature !== exclude
+      nature =>
+        nature !== exclude
     );
+
 
   return available[
     Math.floor(
@@ -532,15 +728,24 @@ function getPokemonPool() {
 
   if (isChampions()) {
 
-    if (rule === "レギュレーション M-A") {
+    if (
+      rule ===
+      "レギュレーション M-A"
+    ) {
       return championsMA;
     }
 
-    if (rule === "レギュレーション M-B") {
+    if (
+      rule ===
+      "レギュレーション M-B"
+    ) {
       return championsMB;
     }
 
-    if (rule === "レギュレーション M-C") {
+    if (
+      rule ===
+      "レギュレーション M-C"
+    ) {
       return championsMC;
     }
   }
@@ -548,22 +753,35 @@ function getPokemonPool() {
 
   if (isSV()) {
 
-    if (rule === "レギュレーション A") {
+    if (
+      rule ===
+      "レギュレーション A"
+    ) {
       return svRegA;
     }
 
-    if (rule === "レギュレーション B") {
+    if (
+      rule ===
+      "レギュレーション B"
+    ) {
       return svRegB;
     }
 
-    if (rule === "レギュレーション H") {
+    if (
+      rule ===
+      "レギュレーション H"
+    ) {
       return svRegH;
     }
 
-    if (rule === "レギュレーション J") {
+    if (
+      rule ===
+      "レギュレーション J"
+    ) {
       return svRegJ;
     }
   }
+
 
   return [];
 }
@@ -573,15 +791,24 @@ function getItemPool() {
 
   if (isChampions()) {
 
-    if (rule === "レギュレーション M-A") {
+    if (
+      rule ===
+      "レギュレーション M-A"
+    ) {
       return championsItemsMA;
     }
 
-    if (rule === "レギュレーション M-B") {
+    if (
+      rule ===
+      "レギュレーション M-B"
+    ) {
       return championsItemsMB;
     }
 
-    if (rule === "レギュレーション M-C") {
+    if (
+      rule ===
+      "レギュレーション M-C"
+    ) {
       return championsItemsMC;
     }
   }
@@ -589,22 +816,35 @@ function getItemPool() {
 
   if (isSV()) {
 
-    if (rule === "レギュレーション A") {
+    if (
+      rule ===
+      "レギュレーション A"
+    ) {
       return svItemsA;
     }
 
-    if (rule === "レギュレーション B") {
+    if (
+      rule ===
+      "レギュレーション B"
+    ) {
       return svItemsB;
     }
 
-    if (rule === "レギュレーション H") {
+    if (
+      rule ===
+      "レギュレーション H"
+    ) {
       return svItemsH;
     }
 
-    if (rule === "レギュレーション J") {
+    if (
+      rule ===
+      "レギュレーション J"
+    ) {
       return svItemsJ;
     }
   }
+
 
   return [];
 }
@@ -612,10 +852,13 @@ function getItemPool() {
 
 function shuffleArray(array) {
 
-  const shuffled = [...array];
+  const shuffled =
+    [...array];
+
 
   for (
-    let i = shuffled.length - 1;
+    let i =
+      shuffled.length - 1;
     i > 0;
     i--
   ) {
@@ -626,6 +869,7 @@ function shuffleArray(array) {
         (i + 1)
       );
 
+
     [
       shuffled[i],
       shuffled[j]
@@ -634,6 +878,7 @@ function shuffleArray(array) {
       shuffled[i]
     ];
   }
+
 
   return shuffled;
 }
@@ -645,8 +890,12 @@ function getSpeciesKey(name) {
     return "";
   }
 
+
   return name
-    .replace(/（.*?）/g, "")
+    .replace(
+      /（.*?）/g,
+      ""
+    )
     .trim();
 }
 
@@ -660,6 +909,7 @@ function hasSameSpecies(
     getSpeciesKey(
       pokemonName
     );
+
 
   return team.some(
     pokemon =>
@@ -681,6 +931,7 @@ function isSVJSpecialPokemon(
   ) {
     return false;
   }
+
 
   return svRegJSpecial.includes(
     pokemonName
@@ -710,15 +961,20 @@ function chooseMegaOption(
     return null;
   }
 
+
   const options =
     getMegaOptions(
       pokemonName,
       rule
     );
 
-  if (options.length === 0) {
+
+  if (
+    options.length === 0
+  ) {
     return null;
   }
+
 
   return options[
     Math.floor(
@@ -729,12 +985,17 @@ function chooseMegaOption(
 }
 
 
+/* =========================
+   チーム生成
+========================= */
+
 function buildNormalTeam(pool) {
 
   const shuffled =
     shuffleArray(pool);
 
   const team = [];
+
 
   for (
     const pokemon
@@ -750,7 +1011,11 @@ function buildNormalTeam(pool) {
       continue;
     }
 
-    team.push(pokemon);
+
+    team.push(
+      pokemon
+    );
+
 
     if (
       team.length === 6
@@ -758,6 +1023,7 @@ function buildNormalTeam(pool) {
       break;
     }
   }
+
 
   return team;
 }
@@ -772,6 +1038,7 @@ function buildSVRegJTeam(pool) {
 
   let specialCount = 0;
 
+
   for (
     const pokemon
     of shuffled
@@ -786,10 +1053,12 @@ function buildSVRegJTeam(pool) {
       continue;
     }
 
+
     const isSpecial =
       isSVJSpecialPokemon(
         pokemon
       );
+
 
     if (
       isSpecial &&
@@ -798,11 +1067,16 @@ function buildSVRegJTeam(pool) {
       continue;
     }
 
-    team.push(pokemon);
+
+    team.push(
+      pokemon
+    );
+
 
     if (isSpecial) {
       specialCount++;
     }
+
 
     if (
       team.length === 6
@@ -810,6 +1084,7 @@ function buildSVRegJTeam(pool) {
       break;
     }
   }
+
 
   return team;
 }
@@ -826,19 +1101,34 @@ function buildTeam() {
 
   if (isSV()) {
 
-    currentMegaEnabled = false;
-    currentMegaIndex = -1;
-    currentMegaStone = "";
+    currentMegaEnabled =
+      false;
+
+    currentMegaIndex =
+      -1;
+
+    currentMegaStone =
+      "";
+
 
     currentTeam =
       isSVRegJ()
-        ? buildSVRegJTeam(pool)
-        : buildNormalTeam(pool);
+        ? buildSVRegJTeam(
+            pool
+          )
+        : buildNormalTeam(
+            pool
+          );
+
 
     currentItems =
       shuffleArray(
         itemPool
-      ).slice(0, 6);
+      ).slice(
+        0,
+        6
+      );
+
 
     return;
   }
@@ -847,11 +1137,16 @@ function buildTeam() {
   currentMegaEnabled =
     Math.random() < 0.5;
 
-  currentMegaIndex = -1;
-  currentMegaStone = "";
+  currentMegaIndex =
+    -1;
+
+  currentMegaStone =
+    "";
 
 
-  if (currentMegaEnabled) {
+  if (
+    currentMegaEnabled
+  ) {
 
     const megaCandidates =
       pool.filter(
@@ -879,7 +1174,9 @@ function buildTeam() {
       const remainingPool =
         pool.filter(
           name =>
-            getSpeciesKey(name) !==
+            getSpeciesKey(
+              name
+            ) !==
             getSpeciesKey(
               megaPokemon
             )
@@ -889,7 +1186,10 @@ function buildTeam() {
       const otherFive =
         buildNormalTeam(
           remainingPool
-        ).slice(0, 5);
+        ).slice(
+          0,
+          5
+        );
 
 
       currentTeam =
@@ -921,6 +1221,7 @@ function buildTeam() {
       currentMegaEnabled =
         false;
 
+
       currentTeam =
         buildNormalTeam(
           pool
@@ -939,7 +1240,10 @@ function buildTeam() {
   currentItems =
     shuffleArray(
       itemPool
-    ).slice(0, 6);
+    ).slice(
+      0,
+      6
+    );
 
 
   if (
@@ -956,6 +1260,10 @@ function buildTeam() {
 }
 
 
+/* =========================
+   ロック再抽選
+========================= */
+
 function buildSVTeamWithLocks() {
 
   const pool =
@@ -971,7 +1279,10 @@ function buildSVTeamWithLocks() {
     i++
   ) {
 
-    if (lockedSlots[i]) {
+    if (
+      lockedSlots[i]
+    ) {
+
       nextTeam[i] =
         currentTeam[i];
     }
@@ -987,7 +1298,9 @@ function buildSVTeamWithLocks() {
 
 
   const shuffled =
-    shuffleArray(pool);
+    shuffleArray(
+      pool
+    );
 
 
   for (
@@ -996,12 +1309,15 @@ function buildSVTeamWithLocks() {
     i++
   ) {
 
-    if (lockedSlots[i]) {
+    if (
+      lockedSlots[i]
+    ) {
       continue;
     }
 
 
-    let foundIndex = -1;
+    let foundIndex =
+      -1;
 
 
     for (
@@ -1072,9 +1388,15 @@ function buildSVTeamWithLocks() {
   currentTeam =
     nextTeam;
 
-  currentMegaEnabled = false;
-  currentMegaIndex = -1;
-  currentMegaStone = "";
+  currentMegaEnabled =
+    false;
+
+  currentMegaIndex =
+    -1;
+
+  currentMegaStone =
+    "";
+
 
   return true;
 }
@@ -1095,7 +1417,10 @@ function buildChampionsTeamWithLocks() {
     i++
   ) {
 
-    if (lockedSlots[i]) {
+    if (
+      lockedSlots[i]
+    ) {
+
       nextTeam[i] =
         currentTeam[i];
     }
@@ -1125,9 +1450,12 @@ function buildChampionsTeamWithLocks() {
     lockedMegaIndex >= 0
   ) {
 
-    currentMegaEnabled = true;
+    currentMegaEnabled =
+      true;
+
     currentMegaIndex =
       lockedMegaIndex;
+
     currentMegaStone =
       oldMegaStone;
 
@@ -1136,13 +1464,20 @@ function buildChampionsTeamWithLocks() {
     currentMegaEnabled =
       Math.random() < 0.5;
 
-    currentMegaIndex = -1;
-    currentMegaStone = "";
+    currentMegaIndex =
+      -1;
+
+    currentMegaStone =
+      "";
 
 
-    if (currentMegaEnabled) {
+    if (
+      currentMegaEnabled
+    ) {
 
-      const unlockedIndices = [];
+      const unlockedIndices =
+        [];
+
 
       for (
         let i = 0;
@@ -1150,8 +1485,12 @@ function buildChampionsTeamWithLocks() {
         i++
       ) {
 
-        if (!lockedSlots[i]) {
-          unlockedIndices.push(i);
+        if (
+          !lockedSlots[i]
+        ) {
+          unlockedIndices.push(
+            i
+          );
         }
       }
 
@@ -1168,6 +1507,7 @@ function buildChampionsTeamWithLocks() {
             ) {
               return false;
             }
+
 
             return (
               getMegaOptions(
@@ -1233,7 +1573,9 @@ function buildChampionsTeamWithLocks() {
 
 
   const shuffled =
-    shuffleArray(pool);
+    shuffleArray(
+      pool
+    );
 
 
   for (
@@ -1242,12 +1584,15 @@ function buildChampionsTeamWithLocks() {
     i++
   ) {
 
-    if (nextTeam[i]) {
+    if (
+      nextTeam[i]
+    ) {
       continue;
     }
 
 
-    let foundIndex = -1;
+    let foundIndex =
+      -1;
 
 
     for (
@@ -1293,6 +1638,7 @@ function buildChampionsTeamWithLocks() {
   currentTeam =
     nextTeam;
 
+
   return true;
 }
 
@@ -1323,6 +1669,7 @@ function rebuildItemsWithLocks() {
       nextItems[i] =
         currentItems[i];
 
+
       usedItems.add(
         currentItems[i]
       );
@@ -1344,7 +1691,10 @@ function rebuildItemsWithLocks() {
     ] =
       currentMegaStone;
 
-    if (currentMegaStone) {
+
+    if (
+      currentMegaStone
+    ) {
 
       usedItems.add(
         currentMegaStone
@@ -1403,6 +1753,7 @@ function rebuildItemsWithLocks() {
   currentItems =
     nextItems;
 
+
   return true;
 }
 
@@ -1441,7 +1792,8 @@ function rebuildNaturesWithLocks() {
 
 function rebuildUnlockedSlots() {
 
-  let success = false;
+  let success =
+    false;
 
 
   if (isSV()) {
@@ -1470,9 +1822,14 @@ function rebuildUnlockedSlots() {
 
   rebuildNaturesWithLocks();
 
+
   return true;
 }
 
+
+/* =========================
+   表示
+========================= */
 
 function updateDrawButtonLabel() {
 
@@ -1514,7 +1871,9 @@ function updateDrawButtonLabel() {
 }
 
 
-async function toggleLock(index) {
+async function toggleLock(
+  index
+) {
 
   if (
     currentTeam.length !== 6
@@ -1527,7 +1886,10 @@ async function toggleLock(index) {
     !lockedSlots[index];
 
 
-  await renderSlot(index);
+  await renderSlot(
+    index
+  );
+
 
   updateDrawButtonLabel();
 
@@ -1541,15 +1903,19 @@ async function toggleLock(index) {
 }
 
 
-async function renderSlot(index) {
+async function renderSlot(
+  index
+) {
 
   const slots =
     document.querySelectorAll(
       ".pokemon"
     );
 
+
   const slot =
     slots[index];
+
 
   const pokemonName =
     currentTeam[index];
@@ -1641,11 +2007,13 @@ async function renderSlot(index) {
       <button
         class="lock-button ${isLocked ? "active" : ""}"
         onclick="toggleLock(${index})">
+
         ${
           isLocked
             ? "🔓 固定を解除"
             : "🔒 このポケモンを固定"
         }
+
       </button>
 
       <button
@@ -1659,7 +2027,8 @@ async function renderSlot(index) {
         class="item-button"
         onclick="rerollItem(${index})"
         ${
-          isLocked || isMega
+          isLocked ||
+          isMega
             ? "disabled"
             : ""
         }>
@@ -1683,7 +2052,9 @@ async function renderAllSlots() {
   await Promise.all(
     currentTeam.map(
       (_, index) =>
-        renderSlot(index)
+        renderSlot(
+          index
+        )
     )
   );
 }
@@ -1691,28 +2062,35 @@ async function renderAllSlots() {
 
 function setDrawCompleteMessage() {
 
-  if (isSVRegJ()) {
+  if (
+    isSVRegJ()
+  ) {
 
     const specialCount =
       countSpecialPokemon(
         currentTeam
       );
 
+
     document.getElementById(
       "message"
     ).textContent =
       `抽選完了！特別なポケモンは${specialCount}匹です。`;
 
+
     return;
   }
 
 
-  if (isSV()) {
+  if (
+    isSV()
+  ) {
 
     document.getElementById(
       "message"
     ).textContent =
       "抽選完了！";
+
 
     return;
   }
@@ -1765,6 +2143,10 @@ function showResultButtons() {
 }
 
 
+/* =========================
+   抽選
+========================= */
+
 async function drawPokemon() {
 
   const pool =
@@ -1783,6 +2165,7 @@ async function drawPokemon() {
       "message"
     ).textContent =
       "このルールのデータはまだ登録されていません。";
+
 
     return;
   }
@@ -1808,6 +2191,7 @@ async function drawPokemon() {
     ).textContent =
       "6匹すべて固定されています。固定を解除してから再抽選してください。";
 
+
     return;
   }
 
@@ -1831,6 +2215,7 @@ async function drawPokemon() {
       ).textContent =
         "再抽選できませんでした。データを確認してください。";
 
+
       return;
     }
 
@@ -1841,11 +2226,13 @@ async function drawPokemon() {
 
     await renderAllSlots();
 
+
     showResultButtons();
 
     updateDrawButtonLabel();
 
     setDrawCompleteMessage();
+
 
     return;
   }
@@ -1866,6 +2253,7 @@ async function drawPokemon() {
       "message"
     ).textContent =
       "6匹を抽選できませんでした。データを確認してください。";
+
 
     return;
   }
@@ -1889,6 +2277,7 @@ async function drawPokemon() {
 
   await renderAllSlots();
 
+
   showResultButtons();
 
   updateDrawButtonLabel();
@@ -1897,7 +2286,13 @@ async function drawPokemon() {
 }
 
 
-function getAvailableNormalItem(index) {
+/* =========================
+   個別引き直し
+========================= */
+
+function getAvailableNormalItem(
+  index
+) {
 
   const itemPool =
     getItemPool();
@@ -1940,7 +2335,9 @@ function getAvailableNormalItem(index) {
 }
 
 
-function getAvailablePokemon(index) {
+function getAvailablePokemon(
+  index
+) {
 
   const pool =
     getPokemonPool();
@@ -1974,7 +2371,9 @@ function getAvailablePokemon(index) {
       }
 
 
-      if (isSVRegJ()) {
+      if (
+        isSVRegJ()
+      ) {
 
         const otherSpecialCount =
           countSpecialPokemon(
@@ -1999,9 +2398,13 @@ function getAvailablePokemon(index) {
 }
 
 
-function getAvailableMegaPokemon(index) {
+function getAvailableMegaPokemon(
+  index
+) {
 
-  if (!isChampions()) {
+  if (
+    !isChampions()
+  ) {
     return [];
   }
 
@@ -2018,7 +2421,9 @@ function getAvailableMegaPokemon(index) {
 }
 
 
-async function rerollPokemon(index) {
+async function rerollPokemon(
+  index
+) {
 
   if (
     currentTeam.length !== 6
@@ -2044,7 +2449,9 @@ async function rerollPokemon(index) {
     index === currentMegaIndex;
 
 
-  if (isMegaSlot) {
+  if (
+    isMegaSlot
+  ) {
 
     const megaPool =
       getAvailableMegaPokemon(
@@ -2126,7 +2533,10 @@ async function rerollPokemon(index) {
 
   hideOldPreview();
 
-  await renderSlot(index);
+
+  await renderSlot(
+    index
+  );
 
 
   document.getElementById(
@@ -2136,7 +2546,9 @@ async function rerollPokemon(index) {
 }
 
 
-async function rerollItem(index) {
+async function rerollItem(
+  index
+) {
 
   if (
     currentTeam.length !== 6 ||
@@ -2152,12 +2564,15 @@ async function rerollItem(index) {
     index === currentMegaIndex;
 
 
-  if (isMegaSlot) {
+  if (
+    isMegaSlot
+  ) {
 
     document.getElementById(
       "message"
     ).textContent =
       "メガ枠の持ち物はメガストーン固定です。";
+
 
     return;
   }
@@ -2180,6 +2595,7 @@ async function rerollItem(index) {
     ).textContent =
       "変更できる持ち物がありません。";
 
+
     return;
   }
 
@@ -2190,7 +2606,10 @@ async function rerollItem(index) {
 
   hideOldPreview();
 
-  await renderSlot(index);
+
+  await renderSlot(
+    index
+  );
 
 
   document.getElementById(
@@ -2200,7 +2619,9 @@ async function rerollItem(index) {
 }
 
 
-async function rerollNature(index) {
+async function rerollNature(
+  index
+) {
 
   if (
     currentTeam.length !== 6 ||
@@ -2226,7 +2647,10 @@ async function rerollNature(index) {
 
   hideOldPreview();
 
-  await renderSlot(index);
+
+  await renderSlot(
+    index
+  );
 
 
   document.getElementById(
@@ -2249,14 +2673,21 @@ function getFavorites() {
         FAVORITES_KEY
       );
 
+
     if (!saved) {
       return [];
     }
 
-    const parsed =
-      JSON.parse(saved);
 
-    return Array.isArray(parsed)
+    const parsed =
+      JSON.parse(
+        saved
+      );
+
+
+    return Array.isArray(
+      parsed
+    )
       ? parsed
       : [];
 
@@ -2267,7 +2698,9 @@ function getFavorites() {
 }
 
 
-function saveFavorites(favorites) {
+function saveFavorites(
+  favorites
+) {
 
   localStorage.setItem(
     FAVORITES_KEY,
@@ -2301,28 +2734,34 @@ function isSameFavorite(
   return (
     favorite.game === game &&
     favorite.rule === rule &&
+
     JSON.stringify(
       favorite.team
     ) ===
-      JSON.stringify(
-        currentTeam
-      ) &&
+    JSON.stringify(
+      currentTeam
+    ) &&
+
     JSON.stringify(
       favorite.items
     ) ===
-      JSON.stringify(
-        currentItems
-      ) &&
+    JSON.stringify(
+      currentItems
+    ) &&
+
     JSON.stringify(
       favorite.natures
     ) ===
-      JSON.stringify(
-        currentNatures
-      ) &&
+    JSON.stringify(
+      currentNatures
+    ) &&
+
     favorite.megaEnabled ===
       currentMegaEnabled &&
+
     favorite.megaIndex ===
       currentMegaIndex &&
+
     favorite.megaStone ===
       currentMegaStone
   );
@@ -2351,12 +2790,15 @@ function saveCurrentFavorite() {
     );
 
 
-  if (alreadySaved) {
+  if (
+    alreadySaved
+  ) {
 
     document.getElementById(
       "message"
     ).textContent =
       "この構築はすでにお気に入りに保存されています。";
+
 
     return;
   }
@@ -2425,27 +2867,48 @@ function formatFavoriteDate(
 ) {
 
   const date =
-    new Date(timestamp);
+    new Date(
+      timestamp
+    );
 
 
   return (
     date.getFullYear() +
     "/" +
+
     String(
       date.getMonth() + 1
-    ).padStart(2, "0") +
+    ).padStart(
+      2,
+      "0"
+    ) +
+
     "/" +
+
     String(
       date.getDate()
-    ).padStart(2, "0") +
+    ).padStart(
+      2,
+      "0"
+    ) +
+
     " " +
+
     String(
       date.getHours()
-    ).padStart(2, "0") +
+    ).padStart(
+      2,
+      "0"
+    ) +
+
     ":" +
+
     String(
       date.getMinutes()
-    ).padStart(2, "0")
+    ).padStart(
+      2,
+      "0"
+    )
   );
 }
 
@@ -2467,9 +2930,12 @@ function renderFavorites() {
   ) {
 
     list.innerHTML =
-      `<div class="favorites-empty">
-        まだお気に入りはありません。
-      </div>`;
+      `
+        <div class="favorites-empty">
+          まだお気に入りはありません。
+        </div>
+      `;
+
 
     return;
   }
@@ -2488,10 +2954,14 @@ function renderFavorites() {
         const megaText =
           favorite.megaEnabled &&
           favorite.megaIndex >= 0
-            ? `<div class="mega-label">
+
+            ? `
+              <div class="mega-label">
                 ⭐ メガ枠：
                 ${favorite.team[favorite.megaIndex]}
-              </div>`
+              </div>
+            `
+
             : "";
 
 
@@ -2533,7 +3003,9 @@ function renderFavorites() {
 }
 
 
-async function loadFavorite(id) {
+async function loadFavorite(
+  id
+) {
 
   const favorite =
     getFavorites().find(
@@ -2592,6 +3064,7 @@ async function loadFavorite(id) {
 
   await renderAllSlots();
 
+
   showResultButtons();
 
   updateDrawButtonLabel();
@@ -2610,14 +3083,15 @@ async function loadFavorite(id) {
 }
 
 
-function deleteFavorite(id) {
+function deleteFavorite(
+  id
+) {
 
   const favorites =
-    getFavorites()
-      .filter(
-        favorite =>
-          favorite.id !== id
-      );
+    getFavorites().filter(
+      favorite =>
+        favorite.id !== id
+    );
 
 
   saveFavorites(
@@ -2639,13 +3113,17 @@ function deleteFavorite(id) {
    シェア画像
 ========================= */
 
-function loadImageForCanvas(src) {
+function loadImageForCanvas(
+  src
+) {
 
   return new Promise(
     resolve => {
 
       if (!src) {
+
         resolve(null);
+
         return;
       }
 
@@ -2659,14 +3137,21 @@ function loadImageForCanvas(src) {
 
 
       img.onload =
-        () => resolve(img);
+        () =>
+          resolve(
+            img
+          );
 
 
       img.onerror =
-        () => resolve(null);
+        () =>
+          resolve(
+            null
+          );
 
 
-      img.src = src;
+      img.src =
+        src;
     }
   );
 }
@@ -2684,6 +3169,7 @@ function drawRoundedRect(
 
   ctx.beginPath();
 
+
   ctx.roundRect(
     x,
     y,
@@ -2692,8 +3178,10 @@ function drawRoundedRect(
     radius
   );
 
+
   ctx.fillStyle =
     fillStyle;
+
 
   ctx.fill();
 
@@ -2733,8 +3221,11 @@ async function createShareImage() {
     );
 
 
-  canvas.width = 1080;
-  canvas.height = 1350;
+  canvas.width =
+    1080;
+
+  canvas.height =
+    1350;
 
 
   const ctx =
@@ -2826,14 +3317,23 @@ async function createShareImage() {
     );
 
 
-  const cardWidth = 430;
-  const cardHeight = 285;
+  const cardWidth =
+    430;
 
-  const startX = 90;
-  const startY = 235;
+  const cardHeight =
+    285;
 
-  const gapX = 40;
-  const gapY = 25;
+  const startX =
+    90;
+
+  const startY =
+    235;
+
+  const gapX =
+    40;
+
+  const gapY =
+    25;
 
 
   for (
@@ -2889,7 +3389,9 @@ async function createShareImage() {
     );
 
 
-    if (isMega) {
+    if (
+      isMega
+    ) {
 
       ctx.fillStyle =
         "#b87300";
@@ -2897,10 +3399,6 @@ async function createShareImage() {
 
       ctx.font =
         "900 20px sans-serif";
-
-
-      ctx.textAlign =
-        "center";
 
 
       ctx.fillText(
@@ -2942,10 +3440,6 @@ async function createShareImage() {
 
     ctx.font =
       "800 27px sans-serif";
-
-
-    ctx.textAlign =
-      "center";
 
 
     ctx.fillText(
@@ -2998,10 +3492,6 @@ async function createShareImage() {
     "600 23px sans-serif";
 
 
-  ctx.textAlign =
-    "center";
-
-
   ctx.fillText(
     `#ポケくじ  ${getGameHashtag()}`,
     540,
@@ -3028,6 +3518,7 @@ async function createShareImage() {
       "message"
     ).textContent =
       "シェア画像を作成できませんでした。";
+
 
     return;
   }
@@ -3096,12 +3587,17 @@ async function shareResult() {
   }
 
 
-  if (!shareImageBlob) {
+  if (
+    !shareImageBlob
+  ) {
+
     await createShareImage();
   }
 
 
-  if (!shareImageBlob) {
+  if (
+    !shareImageBlob
+  ) {
     return;
   }
 
@@ -3151,7 +3647,8 @@ ${megaText}
   const canShareFile =
     navigator.canShare &&
     navigator.canShare({
-      files: [file]
+      files:
+        [file]
     });
 
 
@@ -3183,6 +3680,7 @@ ${megaText}
       );
     }
 
+
     return;
   }
 
@@ -3210,6 +3708,7 @@ ${megaText}
         "共有をキャンセルしました。"
       );
     }
+
 
     return;
   }
@@ -3290,6 +3789,10 @@ ${megaText}
 }
 
 
+/* =========================
+   リセット
+========================= */
+
 function resetDraw() {
 
   currentTeam = [];
@@ -3297,14 +3800,22 @@ function resetDraw() {
   currentNatures = [];
   currentImageUrls = [];
 
+
   lockedSlots =
     Array(6).fill(false);
 
-  currentMegaEnabled = false;
-  currentMegaIndex = -1;
-  currentMegaStone = "";
 
-  shareImageBlob = null;
+  currentMegaEnabled =
+    false;
+
+  currentMegaIndex =
+    -1;
+
+  currentMegaStone =
+    "";
+
+  shareImageBlob =
+    null;
 
 
   const slots =
@@ -3369,7 +3880,14 @@ function resetDraw() {
 }
 
 
+/* =========================
+   初期表示
+========================= */
+
+setupRuleSelector();
+
 renderFavorites();
+
 </script>
 
 <script src="./pwa.js"></script>
