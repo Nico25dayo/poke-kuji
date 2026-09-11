@@ -1,1 +1,11 @@
-
+{
+  "name": "ポケくじ",
+  "short_name": "ポケくじ",
+  "description": "ランダムから始まる、いつもと違うバトル。",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#ef5350",
+  "orientation": "portrait"
+}
