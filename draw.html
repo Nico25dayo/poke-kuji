@@ -191,6 +191,7 @@
     .image-button,
     .share-button,
     .ask-button,
+    .favorite-button,
     .sub-button {
       width: 100%;
       border-radius: 16px;
@@ -231,6 +232,14 @@
       display: none;
     }
 
+    .favorite-button {
+      border: 1px solid #f2b84b;
+      background: #fff8e8;
+      color: #9b6900;
+      margin-bottom: 12px;
+      display: none;
+    }
+
     .sub-button {
       border: 1px solid #ddd;
       background: #fff;
@@ -259,6 +268,82 @@
       border-radius: 16px;
       border: 1px solid #e5e5e5;
       display: block;
+    }
+
+    .favorites-section {
+      margin-top: 38px;
+      padding-top: 28px;
+      border-top: 1px solid #eee;
+    }
+
+    .favorites-title {
+      font-size: 20px;
+      font-weight: 900;
+      margin-bottom: 6px;
+    }
+
+    .favorites-subtitle {
+      font-size: 12px;
+      color: #888;
+      margin-bottom: 18px;
+      line-height: 1.6;
+    }
+
+    .favorites-empty {
+      padding: 22px 15px;
+      background: #f7f7f8;
+      border-radius: 14px;
+      text-align: center;
+      color: #999;
+      font-size: 13px;
+    }
+
+    .favorite-card {
+      border: 1px solid #e5e5e5;
+      border-radius: 16px;
+      padding: 15px;
+      margin-bottom: 12px;
+      background: #fff;
+    }
+
+    .favorite-date {
+      font-size: 11px;
+      color: #999;
+      margin-bottom: 9px;
+    }
+
+    .favorite-team {
+      font-size: 13px;
+      font-weight: 800;
+      line-height: 1.7;
+      margin-bottom: 12px;
+    }
+
+    .favorite-actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    .favorite-load,
+    .favorite-delete {
+      border-radius: 10px;
+      padding: 10px 8px;
+      font-size: 12px;
+      font-weight: 800;
+      cursor: pointer;
+    }
+
+    .favorite-load {
+      border: none;
+      background: #222;
+      color: #fff;
+    }
+
+    .favorite-delete {
+      border: 1px solid #ddd;
+      background: #fff;
+      color: #666;
     }
   </style>
 </head>
@@ -302,6 +387,10 @@
     𝕏 この6匹でみんなに相談
   </button>
 
+  <button id="favoriteButton" class="favorite-button" onclick="saveCurrentFavorite()">
+    ⭐ この構築をお気に入り保存
+  </button>
+
   <button class="sub-button" onclick="resetDraw()">
     リセット
   </button>
@@ -313,6 +402,18 @@
   <div id="message" class="message">
     選択したルールから、重複なしで6匹を抽選します。
   </div>
+
+  <section class="favorites-section">
+    <div class="favorites-title">
+      ⭐ お気に入り
+    </div>
+
+    <div class="favorites-subtitle">
+      このゲーム・レギュレーションで保存した構築を端末内に残せます。
+    </div>
+
+    <div id="favoritesList"></div>
+  </section>
 
 </main>
 
@@ -340,6 +441,9 @@ const rule = params.get("rule") || "";
 
 document.getElementById("gameName").textContent = game;
 document.getElementById("ruleName").textContent = rule;
+
+
+const FAVORITES_KEY = "pokeKujiFavoritesV1";
 
 
 let currentTeam = [];
@@ -412,8 +516,7 @@ function getRandomNature(exclude = "") {
 
   const available =
     pokemonNatures.filter(
-      nature =>
-        nature !== exclude
+      nature => nature !== exclude
     );
 
   return available[
@@ -626,9 +729,7 @@ function chooseMegaOption(
 }
 
 
-function buildNormalTeam(
-  pool
-) {
+function buildNormalTeam(pool) {
 
   const shuffled =
     shuffleArray(pool);
@@ -662,9 +763,7 @@ function buildNormalTeam(
 }
 
 
-function buildSVRegJTeam(
-  pool
-) {
+function buildSVRegJTeam(pool) {
 
   const shuffled =
     shuffleArray(pool);
@@ -873,7 +972,6 @@ function buildSVTeamWithLocks() {
   ) {
 
     if (lockedSlots[i]) {
-
       nextTeam[i] =
         currentTeam[i];
     }
@@ -966,7 +1064,6 @@ function buildSVTeamWithLocks() {
         pokemon
       )
     ) {
-
       specialCount++;
     }
   }
@@ -999,7 +1096,6 @@ function buildChampionsTeamWithLocks() {
   ) {
 
     if (lockedSlots[i]) {
-
       nextTeam[i] =
         currentTeam[i];
     }
@@ -1030,10 +1126,8 @@ function buildChampionsTeamWithLocks() {
   ) {
 
     currentMegaEnabled = true;
-
     currentMegaIndex =
       lockedMegaIndex;
-
     currentMegaStone =
       oldMegaStone;
 
@@ -1286,8 +1380,7 @@ function rebuildItemsWithLocks() {
     if (
       isChampions() &&
       currentMegaEnabled &&
-      i ===
-        currentMegaIndex
+      i === currentMegaIndex
     ) {
       continue;
     }
@@ -1421,9 +1514,7 @@ function updateDrawButtonLabel() {
 }
 
 
-async function toggleLock(
-  index
-) {
+async function toggleLock(index) {
 
   if (
     currentTeam.length !== 6
@@ -1450,9 +1541,7 @@ async function toggleLock(
 }
 
 
-async function renderSlot(
-  index
-) {
+async function renderSlot(index) {
 
   const slots =
     document.querySelectorAll(
@@ -1475,8 +1564,7 @@ async function renderSlot(
   const isMega =
     isChampions() &&
     currentMegaEnabled &&
-    index ===
-      currentMegaIndex;
+    index === currentMegaIndex;
 
 
   const isLocked =
@@ -1650,6 +1738,33 @@ function setDrawCompleteMessage() {
 }
 
 
+function showResultButtons() {
+
+  document.getElementById(
+    "imageButton"
+  ).style.display =
+    "block";
+
+
+  document.getElementById(
+    "shareButton"
+  ).style.display =
+    "block";
+
+
+  document.getElementById(
+    "askButton"
+  ).style.display =
+    "block";
+
+
+  document.getElementById(
+    "favoriteButton"
+  ).style.display =
+    "block";
+}
+
+
 async function drawPokemon() {
 
   const pool =
@@ -1726,6 +1841,8 @@ async function drawPokemon() {
 
     await renderAllSlots();
 
+    showResultButtons();
+
     updateDrawButtonLabel();
 
     setDrawCompleteMessage();
@@ -1772,24 +1889,7 @@ async function drawPokemon() {
 
   await renderAllSlots();
 
-
-  document.getElementById(
-    "imageButton"
-  ).style.display =
-    "block";
-
-
-  document.getElementById(
-    "shareButton"
-  ).style.display =
-    "block";
-
-
-  document.getElementById(
-    "askButton"
-  ).style.display =
-    "block";
-
+  showResultButtons();
 
   updateDrawButtonLabel();
 
@@ -1797,9 +1897,7 @@ async function drawPokemon() {
 }
 
 
-function getAvailableNormalItem(
-  index
-) {
+function getAvailableNormalItem(index) {
 
   const itemPool =
     getItemPool();
@@ -1842,9 +1940,7 @@ function getAvailableNormalItem(
 }
 
 
-function getAvailablePokemon(
-  index
-) {
+function getAvailablePokemon(index) {
 
   const pool =
     getPokemonPool();
@@ -1903,9 +1999,7 @@ function getAvailablePokemon(
 }
 
 
-function getAvailableMegaPokemon(
-  index
-) {
+function getAvailableMegaPokemon(index) {
 
   if (!isChampions()) {
     return [];
@@ -1924,9 +2018,7 @@ function getAvailableMegaPokemon(
 }
 
 
-async function rerollPokemon(
-  index
-) {
+async function rerollPokemon(index) {
 
   if (
     currentTeam.length !== 6
@@ -1949,8 +2041,7 @@ async function rerollPokemon(
   const isMegaSlot =
     isChampions() &&
     currentMegaEnabled &&
-    index ===
-      currentMegaIndex;
+    index === currentMegaIndex;
 
 
   if (isMegaSlot) {
@@ -2045,9 +2136,7 @@ async function rerollPokemon(
 }
 
 
-async function rerollItem(
-  index
-) {
+async function rerollItem(index) {
 
   if (
     currentTeam.length !== 6 ||
@@ -2060,8 +2149,7 @@ async function rerollItem(
   const isMegaSlot =
     isChampions() &&
     currentMegaEnabled &&
-    index ===
-      currentMegaIndex;
+    index === currentMegaIndex;
 
 
   if (isMegaSlot) {
@@ -2112,9 +2200,7 @@ async function rerollItem(
 }
 
 
-async function rerollNature(
-  index
-) {
+async function rerollNature(index) {
 
   if (
     currentTeam.length !== 6 ||
@@ -2150,9 +2236,410 @@ async function rerollNature(
 }
 
 
-function loadImageForCanvas(
-  src
+/* =========================
+   お気に入り
+========================= */
+
+function getFavorites() {
+
+  try {
+
+    const saved =
+      localStorage.getItem(
+        FAVORITES_KEY
+      );
+
+    if (!saved) {
+      return [];
+    }
+
+    const parsed =
+      JSON.parse(saved);
+
+    return Array.isArray(parsed)
+      ? parsed
+      : [];
+
+  } catch (error) {
+
+    return [];
+  }
+}
+
+
+function saveFavorites(favorites) {
+
+  localStorage.setItem(
+    FAVORITES_KEY,
+    JSON.stringify(
+      favorites
+    )
+  );
+}
+
+
+function getCurrentRuleFavorites() {
+
+  return getFavorites()
+    .filter(
+      favorite =>
+        favorite.game === game &&
+        favorite.rule === rule
+    )
+    .sort(
+      (a, b) =>
+        b.createdAt -
+        a.createdAt
+    );
+}
+
+
+function isSameFavorite(
+  favorite
 ) {
+
+  return (
+    favorite.game === game &&
+    favorite.rule === rule &&
+    JSON.stringify(
+      favorite.team
+    ) ===
+      JSON.stringify(
+        currentTeam
+      ) &&
+    JSON.stringify(
+      favorite.items
+    ) ===
+      JSON.stringify(
+        currentItems
+      ) &&
+    JSON.stringify(
+      favorite.natures
+    ) ===
+      JSON.stringify(
+        currentNatures
+      ) &&
+    favorite.megaEnabled ===
+      currentMegaEnabled &&
+    favorite.megaIndex ===
+      currentMegaIndex &&
+    favorite.megaStone ===
+      currentMegaStone
+  );
+}
+
+
+function saveCurrentFavorite() {
+
+  if (
+    currentTeam.length !== 6
+  ) {
+    return;
+  }
+
+
+  const favorites =
+    getFavorites();
+
+
+  const alreadySaved =
+    favorites.some(
+      favorite =>
+        isSameFavorite(
+          favorite
+        )
+    );
+
+
+  if (alreadySaved) {
+
+    document.getElementById(
+      "message"
+    ).textContent =
+      "この構築はすでにお気に入りに保存されています。";
+
+    return;
+  }
+
+
+  const favorite = {
+
+    id:
+      Date.now().toString() +
+      "-" +
+      Math.random()
+        .toString(36)
+        .slice(2, 8),
+
+    createdAt:
+      Date.now(),
+
+    game:
+      game,
+
+    rule:
+      rule,
+
+    team:
+      [...currentTeam],
+
+    items:
+      [...currentItems],
+
+    natures:
+      [...currentNatures],
+
+    megaEnabled:
+      currentMegaEnabled,
+
+    megaIndex:
+      currentMegaIndex,
+
+    megaStone:
+      currentMegaStone
+  };
+
+
+  favorites.push(
+    favorite
+  );
+
+
+  saveFavorites(
+    favorites
+  );
+
+
+  renderFavorites();
+
+
+  document.getElementById(
+    "message"
+  ).textContent =
+    "⭐ この構築をお気に入りに保存しました！";
+}
+
+
+function formatFavoriteDate(
+  timestamp
+) {
+
+  const date =
+    new Date(timestamp);
+
+
+  return (
+    date.getFullYear() +
+    "/" +
+    String(
+      date.getMonth() + 1
+    ).padStart(2, "0") +
+    "/" +
+    String(
+      date.getDate()
+    ).padStart(2, "0") +
+    " " +
+    String(
+      date.getHours()
+    ).padStart(2, "0") +
+    ":" +
+    String(
+      date.getMinutes()
+    ).padStart(2, "0")
+  );
+}
+
+
+function renderFavorites() {
+
+  const list =
+    document.getElementById(
+      "favoritesList"
+    );
+
+
+  const favorites =
+    getCurrentRuleFavorites();
+
+
+  if (
+    favorites.length === 0
+  ) {
+
+    list.innerHTML =
+      `<div class="favorites-empty">
+        まだお気に入りはありません。
+      </div>`;
+
+    return;
+  }
+
+
+  list.innerHTML =
+    favorites.map(
+      favorite => {
+
+        const teamText =
+          favorite.team.join(
+            " / "
+          );
+
+
+        const megaText =
+          favorite.megaEnabled &&
+          favorite.megaIndex >= 0
+            ? `<div class="mega-label">
+                ⭐ メガ枠：
+                ${favorite.team[favorite.megaIndex]}
+              </div>`
+            : "";
+
+
+        return `
+          <div class="favorite-card">
+
+            <div class="favorite-date">
+              ${formatFavoriteDate(
+                favorite.createdAt
+              )}
+            </div>
+
+            ${megaText}
+
+            <div class="favorite-team">
+              ${teamText}
+            </div>
+
+            <div class="favorite-actions">
+
+              <button
+                class="favorite-load"
+                onclick="loadFavorite('${favorite.id}')">
+                呼び出す
+              </button>
+
+              <button
+                class="favorite-delete"
+                onclick="deleteFavorite('${favorite.id}')">
+                削除
+              </button>
+
+            </div>
+
+          </div>
+        `;
+      }
+    ).join("");
+}
+
+
+async function loadFavorite(id) {
+
+  const favorite =
+    getFavorites().find(
+      item =>
+        item.id === id
+    );
+
+
+  if (!favorite) {
+    return;
+  }
+
+
+  if (
+    favorite.game !== game ||
+    favorite.rule !== rule
+  ) {
+    return;
+  }
+
+
+  currentTeam =
+    [...favorite.team];
+
+  currentItems =
+    [...favorite.items];
+
+  currentNatures =
+    [...favorite.natures];
+
+  currentMegaEnabled =
+    Boolean(
+      favorite.megaEnabled
+    );
+
+  currentMegaIndex =
+    Number.isInteger(
+      favorite.megaIndex
+    )
+      ? favorite.megaIndex
+      : -1;
+
+  currentMegaStone =
+    favorite.megaStone || "";
+
+
+  currentImageUrls =
+    Array(6).fill("");
+
+  lockedSlots =
+    Array(6).fill(false);
+
+
+  hideOldPreview();
+
+
+  await renderAllSlots();
+
+  showResultButtons();
+
+  updateDrawButtonLabel();
+
+
+  document.getElementById(
+    "message"
+  ).textContent =
+    "⭐ お気に入りの構築を呼び出しました。";
+
+
+  window.scrollTo({
+    top: 0,
+    behavior: "smooth"
+  });
+}
+
+
+function deleteFavorite(id) {
+
+  const favorites =
+    getFavorites()
+      .filter(
+        favorite =>
+          favorite.id !== id
+      );
+
+
+  saveFavorites(
+    favorites
+  );
+
+
+  renderFavorites();
+
+
+  document.getElementById(
+    "message"
+  ).textContent =
+    "お気に入りを削除しました。";
+}
+
+
+/* =========================
+   シェア画像
+========================= */
+
+function loadImageForCanvas(src) {
 
   return new Promise(
     resolve => {
@@ -2386,8 +2873,7 @@ async function createShareImage() {
     const isMega =
       isChampions() &&
       currentMegaEnabled &&
-      i ===
-        currentMegaIndex;
+      i === currentMegaIndex;
 
 
     drawRoundedRect(
@@ -2865,6 +3351,12 @@ function resetDraw() {
     "none";
 
 
+  document.getElementById(
+    "favoriteButton"
+  ).style.display =
+    "none";
+
+
   hideOldPreview();
 
   updateDrawButtonLabel();
@@ -2875,6 +3367,9 @@ function resetDraw() {
   ).textContent =
     "選択したルールから、重複なしで6匹を抽選します。";
 }
+
+
+renderFavorites();
 </script>
 
 <script src="./pwa.js"></script>
