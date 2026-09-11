@@ -209,6 +209,7 @@
     }
 
     .draw-button,
+    .today-button,
     .image-button,
     .share-button,
     .ask-button,
@@ -225,6 +226,13 @@
     .draw-button {
       border: none;
       background: #222;
+      color: #fff;
+      margin-bottom: 12px;
+    }
+
+    .today-button {
+      border: none;
+      background: #ef5350;
       color: #fff;
       margin-bottom: 12px;
     }
@@ -392,15 +400,9 @@
       🎲 ポケくじ
     </div>
 
-    <div
-      id="gameName"
-      class="game">
-    </div>
+    <div id="gameName" class="game"></div>
 
-    <div
-      id="ruleName"
-      class="rule">
-    </div>
+    <div id="ruleName" class="rule"></div>
 
     <div class="rule-change-wrap">
 
@@ -432,6 +434,14 @@
     class="draw-button"
     onclick="drawPokemon()">
     🎲 6匹を抽選する
+  </button>
+
+
+  <button
+    id="todayButton"
+    class="today-button"
+    onclick="drawTodayPokemon()">
+    📅 今日のポケくじ
   </button>
 
 
@@ -474,23 +484,13 @@
   </button>
 
 
-  <div
-    id="sharePreview"
-    class="share-preview">
-
-    <img
-      id="sharePreviewImage"
-      alt="ポケくじ シェア画像">
-
+  <div id="sharePreview" class="share-preview">
+    <img id="sharePreviewImage" alt="ポケくじ シェア画像">
   </div>
 
 
-  <div
-    id="message"
-    class="message">
-
+  <div id="message" class="message">
     選択したルールから、重複なしで6匹を抽選します。
-
   </div>
 
 
@@ -555,20 +555,16 @@ const params =
     window.location.search
   );
 
-
 const game =
   params.get("game") || "";
 
-
 const rule =
   params.get("rule") || "";
-
 
 document.getElementById(
   "gameName"
 ).textContent =
   game;
-
 
 document.getElementById(
   "ruleName"
@@ -579,10 +575,8 @@ document.getElementById(
 const FAVORITES_KEY =
   "pokeKujiFavoritesV1";
 
-
 const HISTORY_KEY =
   "pokeKujiHistoryV1";
-
 
 const HISTORY_LIMIT =
   20;
@@ -593,26 +587,20 @@ let currentItems = [];
 let currentNatures = [];
 let currentImageUrls = [];
 
-
 let lockedSlots =
   Array(6).fill(false);
-
 
 let currentMegaEnabled =
   false;
 
-
 let currentMegaIndex =
   -1;
-
 
 let currentMegaStone =
   "";
 
-
 let shareImageBlob =
   null;
-
 
 let previewObjectUrl =
   null;
@@ -648,6 +636,169 @@ const pokemonNatures = [
 
 
 /* =========================
+   今日のポケくじ 固定乱数
+========================= */
+
+function getJSTDateKey() {
+
+  const parts =
+    new Intl.DateTimeFormat(
+      "en-US",
+      {
+        timeZone: "Asia/Tokyo",
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit"
+      }
+    ).formatToParts(
+      new Date()
+    );
+
+  const values = {};
+
+  for (const part of parts) {
+
+    values[part.type] =
+      part.value;
+  }
+
+  return (
+    values.year +
+    "-" +
+    values.month +
+    "-" +
+    values.day
+  );
+}
+
+
+function getJSTDateText() {
+
+  const parts =
+    getJSTDateKey().split("-");
+
+  return (
+    parts[0] +
+    "/" +
+    parts[1] +
+    "/" +
+    parts[2]
+  );
+}
+
+
+function hashSeed(text) {
+
+  let hash =
+    2166136261;
+
+  for (
+    let i = 0;
+    i < text.length;
+    i++
+  ) {
+
+    hash ^=
+      text.charCodeAt(i);
+
+    hash =
+      Math.imul(
+        hash,
+        16777619
+      );
+  }
+
+  return hash >>> 0;
+}
+
+
+function createSeededRandom(text) {
+
+  let seed =
+    hashSeed(text);
+
+  return function() {
+
+    seed +=
+      0x6D2B79F5;
+
+    let t =
+      seed;
+
+    t =
+      Math.imul(
+        t ^ (t >>> 15),
+        t | 1
+      );
+
+    t ^=
+      t +
+      Math.imul(
+        t ^ (t >>> 7),
+        t | 61
+      );
+
+    return (
+      (
+        t ^
+        (t >>> 14)
+      ) >>> 0
+    ) / 4294967296;
+  };
+}
+
+
+function seededShuffle(
+  array,
+  random
+) {
+
+  const shuffled =
+    [...array];
+
+  for (
+    let i =
+      shuffled.length - 1;
+    i > 0;
+    i--
+  ) {
+
+    const j =
+      Math.floor(
+        random() *
+        (i + 1)
+      );
+
+    [
+      shuffled[i],
+      shuffled[j]
+    ] = [
+      shuffled[j],
+      shuffled[i]
+    ];
+  }
+
+  return shuffled;
+}
+
+
+function getTodayRandom() {
+
+  const seedText =
+    [
+      "poke-kuji-v1",
+      getJSTDateKey(),
+      game,
+      rule
+    ].join("|");
+
+  return createSeededRandom(
+    seedText
+  );
+}
+
+
+/* =========================
    レギュレーション変更
 ========================= */
 
@@ -658,9 +809,7 @@ function setupRuleSelector() {
       "ruleSelect"
     );
 
-
   let rules = [];
-
 
   if (
     game ===
@@ -686,7 +835,6 @@ function setupRuleSelector() {
     ];
   }
 
-
   if (
     rules.length === 0
   ) {
@@ -697,7 +845,6 @@ function setupRuleSelector() {
     return;
   }
 
-
   select.innerHTML =
     rules.map(
       ruleName => {
@@ -706,7 +853,6 @@ function setupRuleSelector() {
           ruleName === rule
             ? "selected"
             : "";
-
 
         return `
           <option
@@ -720,9 +866,7 @@ function setupRuleSelector() {
 }
 
 
-function changeRegulation(
-  newRule
-) {
+function changeRegulation(newRule) {
 
   if (
     !newRule ||
@@ -731,18 +875,12 @@ function changeRegulation(
     return;
   }
 
-
   const url =
     "draw.html?game=" +
-    encodeURIComponent(
-      game
-    ) +
+    encodeURIComponent(game) +
     "&rule=" +
-    encodeURIComponent(
-      newRule
-    ) +
-    "&v=9";
-
+    encodeURIComponent(newRule) +
+    "&v=10";
 
   window.location.href =
     url;
@@ -776,7 +914,7 @@ function isSVRegJ() {
   return (
     isSV() &&
     rule ===
-      "レギュレーション J"
+    "レギュレーション J"
   );
 }
 
@@ -799,7 +937,6 @@ function getRandomNature(
         nature !== exclude
     );
 
-
   return available[
     Math.floor(
       Math.random() *
@@ -820,14 +957,12 @@ function getPokemonPool() {
       return championsMA;
     }
 
-
     if (
       rule ===
       "レギュレーション M-B"
     ) {
       return championsMB;
     }
-
 
     if (
       rule ===
@@ -836,7 +971,6 @@ function getPokemonPool() {
       return championsMC;
     }
   }
-
 
   if (isSV()) {
 
@@ -847,14 +981,12 @@ function getPokemonPool() {
       return svRegA;
     }
 
-
     if (
       rule ===
       "レギュレーション B"
     ) {
       return svRegB;
     }
-
 
     if (
       rule ===
@@ -863,7 +995,6 @@ function getPokemonPool() {
       return svRegH;
     }
 
-
     if (
       rule ===
       "レギュレーション J"
@@ -871,7 +1002,6 @@ function getPokemonPool() {
       return svRegJ;
     }
   }
-
 
   return [];
 }
@@ -888,14 +1018,12 @@ function getItemPool() {
       return championsItemsMA;
     }
 
-
     if (
       rule ===
       "レギュレーション M-B"
     ) {
       return championsItemsMB;
     }
-
 
     if (
       rule ===
@@ -904,7 +1032,6 @@ function getItemPool() {
       return championsItemsMC;
     }
   }
-
 
   if (isSV()) {
 
@@ -915,7 +1042,6 @@ function getItemPool() {
       return svItemsA;
     }
 
-
     if (
       rule ===
       "レギュレーション B"
@@ -923,14 +1049,12 @@ function getItemPool() {
       return svItemsB;
     }
 
-
     if (
       rule ===
       "レギュレーション H"
     ) {
       return svItemsH;
     }
-
 
     if (
       rule ===
@@ -940,7 +1064,6 @@ function getItemPool() {
     }
   }
 
-
   return [];
 }
 
@@ -949,7 +1072,6 @@ function shuffleArray(array) {
 
   const shuffled =
     [...array];
-
 
   for (
     let i =
@@ -964,7 +1086,6 @@ function shuffleArray(array) {
         (i + 1)
       );
 
-
     [
       shuffled[i],
       shuffled[j]
@@ -973,7 +1094,6 @@ function shuffleArray(array) {
       shuffled[i]
     ];
   }
-
 
   return shuffled;
 }
@@ -984,7 +1104,6 @@ function getSpeciesKey(name) {
   if (!name) {
     return "";
   }
-
 
   return name
     .replace(
@@ -1004,7 +1123,6 @@ function hasSameSpecies(
     getSpeciesKey(
       pokemonName
     );
-
 
   return team.some(
     pokemon =>
@@ -1026,7 +1144,6 @@ function isSVJSpecialPokemon(
   ) {
     return false;
   }
-
 
   return svRegJSpecial.includes(
     pokemonName
@@ -1056,20 +1173,17 @@ function chooseMegaOption(
     return null;
   }
 
-
   const options =
     getMegaOptions(
       pokemonName,
       rule
     );
 
-
   if (
     options.length === 0
   ) {
     return null;
   }
-
 
   return options[
     Math.floor(
@@ -1081,19 +1195,15 @@ function chooseMegaOption(
 
 
 /* =========================
-   チーム生成
+   通常チーム生成
 ========================= */
 
 function buildNormalTeam(pool) {
 
   const shuffled =
-    shuffleArray(
-      pool
-    );
-
+    shuffleArray(pool);
 
   const team = [];
-
 
   for (
     const pokemon
@@ -1109,11 +1219,9 @@ function buildNormalTeam(pool) {
       continue;
     }
 
-
     team.push(
       pokemon
     );
-
 
     if (
       team.length === 6
@@ -1121,7 +1229,6 @@ function buildNormalTeam(pool) {
       break;
     }
   }
-
 
   return team;
 }
@@ -1130,17 +1237,12 @@ function buildNormalTeam(pool) {
 function buildSVRegJTeam(pool) {
 
   const shuffled =
-    shuffleArray(
-      pool
-    );
-
+    shuffleArray(pool);
 
   const team = [];
 
-
   let specialCount =
     0;
-
 
   for (
     const pokemon
@@ -1156,12 +1258,10 @@ function buildSVRegJTeam(pool) {
       continue;
     }
 
-
     const isSpecial =
       isSVJSpecialPokemon(
         pokemon
       );
-
 
     if (
       isSpecial &&
@@ -1170,16 +1270,13 @@ function buildSVRegJTeam(pool) {
       continue;
     }
 
-
     team.push(
       pokemon
     );
 
-
     if (isSpecial) {
       specialCount++;
     }
-
 
     if (
       team.length === 6
@@ -1187,7 +1284,6 @@ function buildSVRegJTeam(pool) {
       break;
     }
   }
-
 
   return team;
 }
@@ -1198,24 +1294,19 @@ function buildTeam() {
   const pool =
     getPokemonPool();
 
-
   const itemPool =
     getItemPool();
-
 
   if (isSV()) {
 
     currentMegaEnabled =
       false;
 
-
     currentMegaIndex =
       -1;
 
-
     currentMegaStone =
       "";
-
 
     currentTeam =
       isSVRegJ()
@@ -1226,7 +1317,6 @@ function buildTeam() {
             pool
           );
 
-
     currentItems =
       shuffleArray(
         itemPool
@@ -1235,22 +1325,17 @@ function buildTeam() {
         6
       );
 
-
     return;
   }
-
 
   currentMegaEnabled =
     Math.random() < 0.5;
 
-
   currentMegaIndex =
     -1;
 
-
   currentMegaStone =
     "";
-
 
   if (
     currentMegaEnabled
@@ -1265,7 +1350,6 @@ function buildTeam() {
           ).length > 0
       );
 
-
     if (
       megaCandidates.length > 0
     ) {
@@ -1278,7 +1362,6 @@ function buildTeam() {
           )
         ];
 
-
       const remainingPool =
         pool.filter(
           name =>
@@ -1290,7 +1373,6 @@ function buildTeam() {
             )
         );
 
-
       const otherFive =
         buildNormalTeam(
           remainingPool
@@ -1299,25 +1381,21 @@ function buildTeam() {
           5
         );
 
-
       currentTeam =
         shuffleArray([
           megaPokemon,
           ...otherFive
         ]);
 
-
       currentMegaIndex =
         currentTeam.indexOf(
           megaPokemon
         );
 
-
       const megaOption =
         chooseMegaOption(
           megaPokemon
         );
-
 
       currentMegaStone =
         megaOption
@@ -1328,7 +1406,6 @@ function buildTeam() {
 
       currentMegaEnabled =
         false;
-
 
       currentTeam =
         buildNormalTeam(
@@ -1344,7 +1421,6 @@ function buildTeam() {
       );
   }
 
-
   currentItems =
     shuffleArray(
       itemPool
@@ -1352,7 +1428,6 @@ function buildTeam() {
       0,
       6
     );
-
 
   if (
     currentMegaEnabled &&
@@ -1369,6 +1444,469 @@ function buildTeam() {
 
 
 /* =========================
+   今日のポケくじ生成
+========================= */
+
+function buildTodayNormalTeam(
+  pool,
+  random
+) {
+
+  const shuffled =
+    seededShuffle(
+      pool,
+      random
+    );
+
+  const team = [];
+
+  for (
+    const pokemon
+    of shuffled
+  ) {
+
+    if (
+      hasSameSpecies(
+        team,
+        pokemon
+      )
+    ) {
+      continue;
+    }
+
+    team.push(
+      pokemon
+    );
+
+    if (
+      team.length === 6
+    ) {
+      break;
+    }
+  }
+
+  return team;
+}
+
+
+function buildTodaySVRegJTeam(
+  pool,
+  random
+) {
+
+  const shuffled =
+    seededShuffle(
+      pool,
+      random
+    );
+
+  const team = [];
+
+  let specialCount =
+    0;
+
+  for (
+    const pokemon
+    of shuffled
+  ) {
+
+    if (
+      hasSameSpecies(
+        team,
+        pokemon
+      )
+    ) {
+      continue;
+    }
+
+    const isSpecial =
+      isSVJSpecialPokemon(
+        pokemon
+      );
+
+    if (
+      isSpecial &&
+      specialCount >= 2
+    ) {
+      continue;
+    }
+
+    team.push(
+      pokemon
+    );
+
+    if (isSpecial) {
+      specialCount++;
+    }
+
+    if (
+      team.length === 6
+    ) {
+      break;
+    }
+  }
+
+  return team;
+}
+
+
+function buildTodayChampionsTeam(
+  pool,
+  random
+) {
+
+  currentMegaEnabled =
+    random() < 0.5;
+
+  currentMegaIndex =
+    -1;
+
+  currentMegaStone =
+    "";
+
+  if (
+    !currentMegaEnabled
+  ) {
+
+    currentTeam =
+      buildTodayNormalTeam(
+        pool,
+        random
+      );
+
+    return;
+  }
+
+  const megaCandidates =
+    pool.filter(
+      pokemon =>
+        getMegaOptions(
+          pokemon,
+          rule
+        ).length > 0
+    );
+
+  if (
+    megaCandidates.length === 0
+  ) {
+
+    currentMegaEnabled =
+      false;
+
+    currentTeam =
+      buildTodayNormalTeam(
+        pool,
+        random
+      );
+
+    return;
+  }
+
+  const megaPokemon =
+    megaCandidates[
+      Math.floor(
+        random() *
+        megaCandidates.length
+      )
+    ];
+
+  const remainingPool =
+    pool.filter(
+      pokemon =>
+        getSpeciesKey(
+          pokemon
+        ) !==
+        getSpeciesKey(
+          megaPokemon
+        )
+    );
+
+  const otherFive =
+    buildTodayNormalTeam(
+      remainingPool,
+      random
+    ).slice(
+      0,
+      5
+    );
+
+  currentTeam =
+    seededShuffle(
+      [
+        megaPokemon,
+        ...otherFive
+      ],
+      random
+    );
+
+  currentMegaIndex =
+    currentTeam.indexOf(
+      megaPokemon
+    );
+
+  const megaOptions =
+    getMegaOptions(
+      megaPokemon,
+      rule
+    );
+
+  if (
+    megaOptions.length > 0
+  ) {
+
+    const megaOption =
+      megaOptions[
+        Math.floor(
+          random() *
+          megaOptions.length
+        )
+      ];
+
+    currentMegaStone =
+      megaOption.stone || "";
+
+  } else {
+
+    currentMegaEnabled =
+      false;
+
+    currentMegaIndex =
+      -1;
+
+    currentMegaStone =
+      "";
+  }
+}
+
+
+function buildTodayItems(
+  random
+) {
+
+  const itemPool =
+    getItemPool();
+
+  const shuffledItems =
+    seededShuffle(
+      itemPool,
+      random
+    );
+
+  currentItems =
+    shuffledItems.slice(
+      0,
+      6
+    );
+
+  if (
+    isChampions() &&
+    currentMegaEnabled &&
+    currentMegaIndex >= 0 &&
+    currentMegaStone
+  ) {
+
+    const used =
+      new Set();
+
+    for (
+      let i = 0;
+      i < 6;
+      i++
+    ) {
+
+      if (
+        i === currentMegaIndex
+      ) {
+        continue;
+      }
+
+      let item =
+        currentItems[i];
+
+      if (
+        item === currentMegaStone ||
+        used.has(item)
+      ) {
+
+        item =
+          shuffledItems.find(
+            candidate =>
+              candidate !==
+                currentMegaStone &&
+              !used.has(
+                candidate
+              )
+          ) || item;
+
+        currentItems[i] =
+          item;
+      }
+
+      used.add(
+        currentItems[i]
+      );
+    }
+
+    currentItems[
+      currentMegaIndex
+    ] =
+      currentMegaStone;
+  }
+}
+
+
+function buildTodayNatures(
+  random
+) {
+
+  currentNatures = [];
+
+  for (
+    let i = 0;
+    i < 6;
+    i++
+  ) {
+
+    const index =
+      Math.floor(
+        random() *
+        pokemonNatures.length
+      );
+
+    currentNatures.push(
+      pokemonNatures[
+        index
+      ]
+    );
+  }
+}
+
+
+async function drawTodayPokemon() {
+
+  const pool =
+    getPokemonPool();
+
+  const itemPool =
+    getItemPool();
+
+  if (
+    pool.length < 6 ||
+    itemPool.length < 6
+  ) {
+
+    document.getElementById(
+      "message"
+    ).textContent =
+      "このルールのデータはまだ登録されていません。";
+
+    return;
+  }
+
+  const random =
+    getTodayRandom();
+
+  lockedSlots =
+    Array(6).fill(
+      false
+    );
+
+  currentImageUrls =
+    Array(6).fill(
+      ""
+    );
+
+  hideOldPreview();
+
+  if (
+    isSV()
+  ) {
+
+    currentMegaEnabled =
+      false;
+
+    currentMegaIndex =
+      -1;
+
+    currentMegaStone =
+      "";
+
+    currentTeam =
+      isSVRegJ()
+        ? buildTodaySVRegJTeam(
+            pool,
+            random
+          )
+        : buildTodayNormalTeam(
+            pool,
+            random
+          );
+
+  } else {
+
+    buildTodayChampionsTeam(
+      pool,
+      random
+    );
+  }
+
+  if (
+    currentTeam.length !== 6
+  ) {
+
+    document.getElementById(
+      "message"
+    ).textContent =
+      "今日のポケくじを作成できませんでした。";
+
+    return;
+  }
+
+  buildTodayItems(
+    random
+  );
+
+  buildTodayNatures(
+    random
+  );
+
+  await renderAllSlots();
+
+  showResultButtons();
+
+  updateDrawButtonLabel();
+
+  saveCurrentHistory();
+
+  let message =
+    `📅 ${getJSTDateText()} 今日のポケくじ！全ユーザー共通の6匹です。`;
+
+  if (
+    isSVRegJ()
+  ) {
+
+    message +=
+      ` 特別なポケモンは${countSpecialPokemon(currentTeam)}匹です。`;
+  }
+
+  if (
+    isChampions() &&
+    currentMegaEnabled &&
+    currentMegaIndex >= 0
+  ) {
+
+    message +=
+      ` メガ枠は${currentTeam[currentMegaIndex]}です。`;
+  }
+
+  document.getElementById(
+    "message"
+  ).textContent =
+    message;
+}
+
+
+/* =========================
    ロック抽選
 ========================= */
 
@@ -1377,10 +1915,8 @@ function buildSVTeamWithLocks() {
   const pool =
     getPokemonPool();
 
-
   const nextTeam =
     Array(6).fill("");
-
 
   for (
     let i = 0;
@@ -1397,7 +1933,6 @@ function buildSVTeamWithLocks() {
     }
   }
 
-
   let specialCount =
     isSVRegJ()
       ? countSpecialPokemon(
@@ -1405,12 +1940,10 @@ function buildSVTeamWithLocks() {
         )
       : 0;
 
-
   const shuffled =
     shuffleArray(
       pool
     );
-
 
   for (
     let i = 0;
@@ -1424,10 +1957,8 @@ function buildSVTeamWithLocks() {
       continue;
     }
 
-
     let foundIndex =
       -1;
-
 
     for (
       let j = 0;
@@ -1438,7 +1969,6 @@ function buildSVTeamWithLocks() {
       const pokemon =
         shuffled[j];
 
-
       if (
         hasSameSpecies(
           nextTeam,
@@ -1447,7 +1977,6 @@ function buildSVTeamWithLocks() {
       ) {
         continue;
       }
-
 
       if (
         isSVRegJ() &&
@@ -1459,14 +1988,11 @@ function buildSVTeamWithLocks() {
         continue;
       }
 
-
       foundIndex =
         j;
 
-
       break;
     }
-
 
     if (
       foundIndex < 0
@@ -1474,17 +2000,14 @@ function buildSVTeamWithLocks() {
       return false;
     }
 
-
     const pokemon =
       shuffled.splice(
         foundIndex,
         1
       )[0];
 
-
     nextTeam[i] =
       pokemon;
-
 
     if (
       isSVRegJ() &&
@@ -1496,22 +2019,17 @@ function buildSVTeamWithLocks() {
     }
   }
 
-
   currentTeam =
     nextTeam;
-
 
   currentMegaEnabled =
     false;
 
-
   currentMegaIndex =
     -1;
 
-
   currentMegaStone =
     "";
-
 
   return true;
 }
@@ -1522,10 +2040,8 @@ function buildChampionsTeamWithLocks() {
   const pool =
     getPokemonPool();
 
-
   const nextTeam =
     Array(6).fill("");
-
 
   for (
     let i = 0;
@@ -1542,14 +2058,11 @@ function buildChampionsTeamWithLocks() {
     }
   }
 
-
   const oldMegaIndex =
     currentMegaIndex;
 
-
   const oldMegaStone =
     currentMegaStone;
-
 
   const lockedMegaIndex =
     (
@@ -1562,7 +2075,6 @@ function buildChampionsTeamWithLocks() {
       ? oldMegaIndex
       : -1;
 
-
   if (
     lockedMegaIndex >= 0
   ) {
@@ -1570,10 +2082,8 @@ function buildChampionsTeamWithLocks() {
     currentMegaEnabled =
       true;
 
-
     currentMegaIndex =
       lockedMegaIndex;
-
 
     currentMegaStone =
       oldMegaStone;
@@ -1583,14 +2093,11 @@ function buildChampionsTeamWithLocks() {
     currentMegaEnabled =
       Math.random() < 0.5;
 
-
     currentMegaIndex =
       -1;
 
-
     currentMegaStone =
       "";
-
 
     if (
       currentMegaEnabled
@@ -1598,7 +2105,6 @@ function buildChampionsTeamWithLocks() {
 
       const unlockedIndices =
         [];
-
 
       for (
         let i = 0;
@@ -1616,7 +2122,6 @@ function buildChampionsTeamWithLocks() {
         }
       }
 
-
       const megaCandidates =
         pool.filter(
           pokemon => {
@@ -1630,7 +2135,6 @@ function buildChampionsTeamWithLocks() {
               return false;
             }
 
-
             return (
               getMegaOptions(
                 pokemon,
@@ -1639,7 +2143,6 @@ function buildChampionsTeamWithLocks() {
             );
           }
         );
-
 
       if (
         unlockedIndices.length > 0 &&
@@ -1654,7 +2157,6 @@ function buildChampionsTeamWithLocks() {
             )
           ];
 
-
         const targetIndex =
           unlockedIndices[
             Math.floor(
@@ -1663,22 +2165,18 @@ function buildChampionsTeamWithLocks() {
             )
           ];
 
-
         nextTeam[
           targetIndex
         ] =
           megaPokemon;
 
-
         currentMegaIndex =
           targetIndex;
-
 
         const megaOption =
           chooseMegaOption(
             megaPokemon
           );
-
 
         currentMegaStone =
           megaOption
@@ -1693,12 +2191,10 @@ function buildChampionsTeamWithLocks() {
     }
   }
 
-
   const shuffled =
     shuffleArray(
       pool
     );
-
 
   for (
     let i = 0;
@@ -1712,10 +2208,8 @@ function buildChampionsTeamWithLocks() {
       continue;
     }
 
-
     let foundIndex =
       -1;
-
 
     for (
       let j = 0;
@@ -1726,7 +2220,6 @@ function buildChampionsTeamWithLocks() {
       const pokemon =
         shuffled[j];
 
-
       if (
         hasSameSpecies(
           nextTeam,
@@ -1736,21 +2229,17 @@ function buildChampionsTeamWithLocks() {
         continue;
       }
 
-
       foundIndex =
         j;
 
-
       break;
     }
-
 
     if (
       foundIndex < 0
     ) {
       return false;
     }
-
 
     nextTeam[i] =
       shuffled.splice(
@@ -1759,10 +2248,8 @@ function buildChampionsTeamWithLocks() {
       )[0];
   }
 
-
   currentTeam =
     nextTeam;
-
 
   return true;
 }
@@ -1773,14 +2260,11 @@ function rebuildItemsWithLocks() {
   const itemPool =
     getItemPool();
 
-
   const nextItems =
     Array(6).fill("");
 
-
   const usedItems =
     new Set();
-
 
   for (
     let i = 0;
@@ -1796,13 +2280,11 @@ function rebuildItemsWithLocks() {
       nextItems[i] =
         currentItems[i];
 
-
       usedItems.add(
         currentItems[i]
       );
     }
   }
-
 
   if (
     isChampions() &&
@@ -1818,7 +2300,6 @@ function rebuildItemsWithLocks() {
     ] =
       currentMegaStone;
 
-
     if (
       currentMegaStone
     ) {
@@ -1829,7 +2310,6 @@ function rebuildItemsWithLocks() {
     }
   }
 
-
   const availableItems =
     shuffleArray(
       itemPool.filter(
@@ -1839,7 +2319,6 @@ function rebuildItemsWithLocks() {
           )
       )
     );
-
 
   for (
     let i = 0;
@@ -1853,7 +2332,6 @@ function rebuildItemsWithLocks() {
       continue;
     }
 
-
     if (
       isChampions() &&
       currentMegaEnabled &&
@@ -1862,24 +2340,19 @@ function rebuildItemsWithLocks() {
       continue;
     }
 
-
     const nextItem =
       availableItems.shift();
-
 
     if (!nextItem) {
       return false;
     }
 
-
     nextItems[i] =
       nextItem;
   }
 
-
   currentItems =
     nextItems;
-
 
   return true;
 }
@@ -1889,7 +2362,6 @@ function rebuildNaturesWithLocks() {
 
   const nextNatures =
     Array(6).fill("");
-
 
   for (
     let i = 0;
@@ -1911,7 +2383,6 @@ function rebuildNaturesWithLocks() {
     }
   }
 
-
   currentNatures =
     nextNatures;
 }
@@ -1921,7 +2392,6 @@ function rebuildUnlockedSlots() {
 
   let success =
     false;
-
 
   if (isSV()) {
 
@@ -1934,11 +2404,9 @@ function rebuildUnlockedSlots() {
       buildChampionsTeamWithLocks();
   }
 
-
   if (!success) {
     return false;
   }
-
 
   if (
     !rebuildItemsWithLocks()
@@ -1946,9 +2414,7 @@ function rebuildUnlockedSlots() {
     return false;
   }
 
-
   rebuildNaturesWithLocks();
-
 
   return true;
 }
@@ -1965,7 +2431,6 @@ function updateDrawButtonLabel() {
       "drawButton"
     );
 
-
   if (
     currentTeam.length !== 6
   ) {
@@ -1973,16 +2438,13 @@ function updateDrawButtonLabel() {
     button.textContent =
       "🎲 6匹を抽選する";
 
-
     return;
   }
-
 
   const lockedCount =
     lockedSlots.filter(
       Boolean
     ).length;
-
 
   if (
     lockedCount > 0
@@ -2009,18 +2471,14 @@ async function toggleLock(
     return;
   }
 
-
   lockedSlots[index] =
     !lockedSlots[index];
-
 
   await renderSlot(
     index
   );
 
-
   updateDrawButtonLabel();
-
 
   document.getElementById(
     "message"
@@ -2040,32 +2498,25 @@ async function renderSlot(
       ".pokemon"
     );
 
-
   const slot =
     slots[index];
-
 
   const pokemonName =
     currentTeam[index];
 
-
   const itemName =
     currentItems[index];
 
-
   const natureName =
     currentNatures[index];
-
 
   const isMega =
     isChampions() &&
     currentMegaEnabled &&
     index === currentMegaIndex;
 
-
   const isLocked =
     lockedSlots[index];
-
 
   slot.classList.remove(
     "empty",
@@ -2073,13 +2524,11 @@ async function renderSlot(
     "locked"
   );
 
-
   if (isMega) {
     slot.classList.add(
       "mega"
     );
   }
-
 
   if (isLocked) {
     slot.classList.add(
@@ -2087,28 +2536,23 @@ async function renderSlot(
     );
   }
 
-
   const imageUrl =
     await getPokemonImage(
       pokemonName
     );
 
-
   currentImageUrls[index] =
     imageUrl || "";
-
 
   const megaLabel =
     isMega
       ? `<div class="mega-label">⭐ メガ枠</div>`
       : "";
 
-
   const lockLabel =
     isLocked
       ? `<div class="lock-label">🔒 固定中</div>`
       : "";
-
 
   slot.innerHTML = `
     ${
@@ -2207,16 +2651,13 @@ function setDrawCompleteMessage() {
         currentTeam
       );
 
-
     document.getElementById(
       "message"
     ).textContent =
       `抽選完了！特別なポケモンは${specialCount}匹です。`;
 
-
     return;
   }
-
 
   if (isSV()) {
 
@@ -2225,10 +2666,8 @@ function setDrawCompleteMessage() {
     ).textContent =
       "抽選完了！";
 
-
     return;
   }
-
 
   if (
     currentMegaEnabled &&
@@ -2257,18 +2696,15 @@ function showResultButtons() {
   ).style.display =
     "block";
 
-
   document.getElementById(
     "shareButton"
   ).style.display =
     "block";
 
-
   document.getElementById(
     "askButton"
   ).style.display =
     "block";
-
 
   document.getElementById(
     "favoriteButton"
@@ -2278,7 +2714,7 @@ function showResultButtons() {
 
 
 /* =========================
-   抽選
+   通常抽選
 ========================= */
 
 async function drawPokemon() {
@@ -2286,10 +2722,8 @@ async function drawPokemon() {
   const pool =
     getPokemonPool();
 
-
   const itemPool =
     getItemPool();
-
 
   if (
     pool.length < 6 ||
@@ -2301,20 +2735,16 @@ async function drawPokemon() {
     ).textContent =
       "このルールのデータはまだ登録されていません。";
 
-
     return;
   }
 
-
   const hasCurrentTeam =
     currentTeam.length === 6;
-
 
   const lockedCount =
     lockedSlots.filter(
       Boolean
     ).length;
-
 
   if (
     hasCurrentTeam &&
@@ -2326,13 +2756,10 @@ async function drawPokemon() {
     ).textContent =
       "6匹すべて固定されています。固定を解除してから再抽選してください。";
 
-
     return;
   }
 
-
   hideOldPreview();
-
 
   if (
     hasCurrentTeam &&
@@ -2342,7 +2769,6 @@ async function drawPokemon() {
     const success =
       rebuildUnlockedSlots();
 
-
     if (!success) {
 
       document.getElementById(
@@ -2350,17 +2776,13 @@ async function drawPokemon() {
       ).textContent =
         "再抽選できませんでした。データを確認してください。";
 
-
       return;
     }
-
 
     currentImageUrls =
       Array(6).fill("");
 
-
     await renderAllSlots();
-
 
     showResultButtons();
 
@@ -2370,17 +2792,13 @@ async function drawPokemon() {
 
     saveCurrentHistory();
 
-
     return;
   }
-
 
   lockedSlots =
     Array(6).fill(false);
 
-
   buildTeam();
-
 
   if (
     currentTeam.length < 6
@@ -2391,14 +2809,11 @@ async function drawPokemon() {
     ).textContent =
       "6匹を抽選できませんでした。データを確認してください。";
 
-
     return;
   }
 
-
   currentNatures = [];
   currentImageUrls = [];
-
 
   for (
     let i = 0;
@@ -2411,9 +2826,7 @@ async function drawPokemon() {
     );
   }
 
-
   await renderAllSlots();
-
 
   showResultButtons();
 
@@ -2436,17 +2849,14 @@ function getAvailableNormalItem(
   const itemPool =
     getItemPool();
 
-
   const usedItems =
     currentItems.filter(
       (_, i) =>
         i !== index
     );
 
-
   const currentItem =
     currentItems[index];
-
 
   const availableItems =
     itemPool.filter(
@@ -2457,13 +2867,11 @@ function getAvailableNormalItem(
         )
     );
 
-
   if (
     availableItems.length === 0
   ) {
     return "";
   }
-
 
   return availableItems[
     Math.floor(
@@ -2481,13 +2889,11 @@ function getAvailablePokemon(
   const pool =
     getPokemonPool();
 
-
   const otherPokemon =
     currentTeam.filter(
       (_, i) =>
         i !== index
     );
-
 
   return pool.filter(
     pokemon => {
@@ -2499,7 +2905,6 @@ function getAvailablePokemon(
         return false;
       }
 
-
       if (
         hasSameSpecies(
           otherPokemon,
@@ -2508,7 +2913,6 @@ function getAvailablePokemon(
       ) {
         return false;
       }
-
 
       if (
         isSVRegJ()
@@ -2519,7 +2923,6 @@ function getAvailablePokemon(
             otherPokemon
           );
 
-
         if (
           otherSpecialCount >= 2 &&
           isSVJSpecialPokemon(
@@ -2529,7 +2932,6 @@ function getAvailablePokemon(
           return false;
         }
       }
-
 
       return true;
     }
@@ -2546,7 +2948,6 @@ function getAvailableMegaPokemon(
   ) {
     return [];
   }
-
 
   return getAvailablePokemon(
     index
@@ -2570,23 +2971,19 @@ async function rerollPokemon(
     return;
   }
 
-
   if (
     lockedSlots[index]
   ) {
     return;
   }
 
-
   const oldPokemon =
     currentTeam[index];
-
 
   const isMegaSlot =
     isChampions() &&
     currentMegaEnabled &&
     index === currentMegaIndex;
-
 
   if (
     isMegaSlot
@@ -2597,13 +2994,11 @@ async function rerollPokemon(
         index
       );
 
-
     if (
       megaPool.length === 0
     ) {
       return;
     }
-
 
     const newPokemon =
       megaPool[
@@ -2613,22 +3008,18 @@ async function rerollPokemon(
         )
       ];
 
-
     const megaOption =
       chooseMegaOption(
         newPokemon
       );
 
-
     currentTeam[index] =
       newPokemon;
-
 
     currentMegaStone =
       megaOption
         ? megaOption.stone
         : "";
-
 
     currentItems[index] =
       currentMegaStone;
@@ -2640,13 +3031,11 @@ async function rerollPokemon(
         index
       );
 
-
     if (
       availablePokemon.length === 0
     ) {
       return;
     }
-
 
     currentTeam[index] =
       availablePokemon[
@@ -2656,30 +3045,24 @@ async function rerollPokemon(
         )
       ];
 
-
     currentItems[index] =
       getAvailableNormalItem(
         index
       );
   }
 
-
   currentNatures[index] =
     getRandomNature(
       currentNatures[index]
     );
 
-
   hideOldPreview();
-
 
   await renderSlot(
     index
   );
 
-
   saveCurrentHistory();
-
 
   document.getElementById(
     "message"
@@ -2699,12 +3082,10 @@ async function rerollItem(
     return;
   }
 
-
   const isMegaSlot =
     isChampions() &&
     currentMegaEnabled &&
     index === currentMegaIndex;
-
 
   if (
     isMegaSlot
@@ -2715,20 +3096,16 @@ async function rerollItem(
     ).textContent =
       "メガ枠の持ち物はメガストーン固定です。";
 
-
     return;
   }
 
-
   const oldItem =
     currentItems[index];
-
 
   const newItem =
     getAvailableNormalItem(
       index
     );
-
 
   if (!newItem) {
 
@@ -2737,25 +3114,19 @@ async function rerollItem(
     ).textContent =
       "変更できる持ち物がありません。";
 
-
     return;
   }
-
 
   currentItems[index] =
     newItem;
 
-
   hideOldPreview();
-
 
   await renderSlot(
     index
   );
 
-
   saveCurrentHistory();
-
 
   document.getElementById(
     "message"
@@ -2775,31 +3146,24 @@ async function rerollNature(
     return;
   }
 
-
   const oldNature =
     currentNatures[index];
-
 
   const newNature =
     getRandomNature(
       oldNature
     );
 
-
   currentNatures[index] =
     newNature;
 
-
   hideOldPreview();
-
 
   await renderSlot(
     index
   );
 
-
   saveCurrentHistory();
-
 
   document.getElementById(
     "message"
@@ -2888,7 +3252,6 @@ function formatSavedDate(
       timestamp
     );
 
-
   return (
     date.getFullYear() +
     "/" +
@@ -2931,20 +3294,16 @@ async function applySavedSnapshot(
   currentTeam =
     [...saved.team];
 
-
   currentItems =
     [...saved.items];
 
-
   currentNatures =
     [...saved.natures];
-
 
   currentMegaEnabled =
     Boolean(
       saved.megaEnabled
     );
-
 
   currentMegaIndex =
     Number.isInteger(
@@ -2953,35 +3312,27 @@ async function applySavedSnapshot(
       ? saved.megaIndex
       : -1;
 
-
   currentMegaStone =
     saved.megaStone || "";
-
 
   currentImageUrls =
     Array(6).fill("");
 
-
   lockedSlots =
     Array(6).fill(false);
 
-
   hideOldPreview();
 
-
   await renderAllSlots();
-
 
   showResultButtons();
 
   updateDrawButtonLabel();
 
-
   document.getElementById(
     "message"
   ).textContent =
     message;
-
 
   window.scrollTo({
     top: 0,
@@ -3003,17 +3354,14 @@ function getFavorites() {
         FAVORITES_KEY
       );
 
-
     if (!saved) {
       return [];
     }
-
 
     const parsed =
       JSON.parse(
         saved
       );
-
 
     return Array.isArray(
       parsed
@@ -3065,14 +3413,11 @@ function saveCurrentFavorite() {
     return;
   }
 
-
   const favorites =
     getFavorites();
 
-
   const snapshot =
     createCurrentSnapshot();
-
 
   const alreadySaved =
     favorites.some(
@@ -3083,7 +3428,6 @@ function saveCurrentFavorite() {
         )
     );
 
-
   if (
     alreadySaved
   ) {
@@ -3093,10 +3437,8 @@ function saveCurrentFavorite() {
     ).textContent =
       "この構築はすでにお気に入りに保存されています。";
 
-
     return;
   }
-
 
   favorites.push({
 
@@ -3113,14 +3455,11 @@ function saveCurrentFavorite() {
     ...snapshot
   });
 
-
   saveFavorites(
     favorites
   );
 
-
   renderFavorites();
-
 
   document.getElementById(
     "message"
@@ -3136,10 +3475,8 @@ function renderFavorites() {
       "favoritesList"
     );
 
-
   const favorites =
     getCurrentRuleFavorites();
-
 
   if (
     favorites.length === 0
@@ -3152,10 +3489,8 @@ function renderFavorites() {
         </div>
       `;
 
-
     return;
   }
-
 
   list.innerHTML =
     favorites.map(
@@ -3165,7 +3500,6 @@ function renderFavorites() {
           favorite.team.join(
             " / "
           );
-
 
         const megaText =
           favorite.megaEnabled &&
@@ -3179,7 +3513,6 @@ function renderFavorites() {
             `
 
             : "";
-
 
         return `
           <div class="storage-card">
@@ -3229,11 +3562,9 @@ async function loadFavorite(
         item.id === id
     );
 
-
   if (!favorite) {
     return;
   }
-
 
   await applySavedSnapshot(
     favorite,
@@ -3252,14 +3583,11 @@ function deleteFavorite(
         favorite.id !== id
     );
 
-
   saveFavorites(
     favorites
   );
 
-
   renderFavorites();
-
 
   document.getElementById(
     "message"
@@ -3281,17 +3609,14 @@ function getHistory() {
         HISTORY_KEY
       );
 
-
     if (!saved) {
       return [];
     }
-
 
     const parsed =
       JSON.parse(
         saved
       );
-
 
     return Array.isArray(
       parsed
@@ -3343,14 +3668,11 @@ function saveCurrentHistory() {
     return;
   }
 
-
   const allHistory =
     getHistory();
 
-
   const snapshot =
     createCurrentSnapshot();
-
 
   const currentRuleHistory =
     allHistory
@@ -3365,10 +3687,8 @@ function saveCurrentHistory() {
           a.createdAt
       );
 
-
   const latest =
     currentRuleHistory[0];
-
 
   if (
     latest &&
@@ -3380,7 +3700,6 @@ function saveCurrentHistory() {
 
     return;
   }
-
 
   const newEntry = {
 
@@ -3397,12 +3716,10 @@ function saveCurrentHistory() {
     ...snapshot
   };
 
-
   let nextHistory = [
     newEntry,
     ...allHistory
   ];
-
 
   const sameRule =
     nextHistory
@@ -3417,7 +3734,6 @@ function saveCurrentHistory() {
           a.createdAt
       );
 
-
   const keepIds =
     new Set(
       sameRule
@@ -3431,7 +3747,6 @@ function saveCurrentHistory() {
         )
     );
 
-
   nextHistory =
     nextHistory.filter(
       item => {
@@ -3443,18 +3758,15 @@ function saveCurrentHistory() {
           return true;
         }
 
-
         return keepIds.has(
           item.id
         );
       }
     );
 
-
   saveHistory(
     nextHistory
   );
-
 
   renderHistory();
 }
@@ -3467,16 +3779,13 @@ function renderHistory() {
       "historyList"
     );
 
-
   const clearButton =
     document.getElementById(
       "historyClearButton"
     );
 
-
   const history =
     getCurrentRuleHistory();
-
 
   if (
     history.length === 0
@@ -3485,7 +3794,6 @@ function renderHistory() {
     clearButton.style.display =
       "none";
 
-
     list.innerHTML =
       `
         <div class="storage-empty">
@@ -3493,14 +3801,11 @@ function renderHistory() {
         </div>
       `;
 
-
     return;
   }
 
-
   clearButton.style.display =
     "block";
-
 
   list.innerHTML =
     history.map(
@@ -3510,7 +3815,6 @@ function renderHistory() {
           item.team.join(
             " / "
           );
-
 
         const megaText =
           item.megaEnabled &&
@@ -3524,7 +3828,6 @@ function renderHistory() {
             `
 
             : "";
-
 
         return `
           <div class="storage-card">
@@ -3574,11 +3877,9 @@ async function loadHistory(
         historyItem.id === id
     );
 
-
   if (!item) {
     return;
   }
-
 
   await applySavedSnapshot(
     item,
@@ -3597,14 +3898,11 @@ function deleteHistory(
         item.id !== id
     );
 
-
   saveHistory(
     history
   );
 
-
   renderHistory();
-
 
   document.getElementById(
     "message"
@@ -3624,14 +3922,11 @@ function clearCurrentHistory() {
         )
     );
 
-
   saveHistory(
     history
   );
 
-
   renderHistory();
-
 
   document.getElementById(
     "message"
@@ -3658,14 +3953,11 @@ function loadImageForCanvas(
         return;
       }
 
-
       const img =
         new Image();
 
-
       img.crossOrigin =
         "anonymous";
-
 
       img.onload =
         () =>
@@ -3673,13 +3965,11 @@ function loadImageForCanvas(
             img
           );
 
-
       img.onerror =
         () =>
           resolve(
             null
           );
-
 
       img.src =
         src;
@@ -3700,7 +3990,6 @@ function drawRoundedRect(
 
   ctx.beginPath();
 
-
   ctx.roundRect(
     x,
     y,
@@ -3709,10 +3998,8 @@ function drawRoundedRect(
     radius
   );
 
-
   ctx.fillStyle =
     fillStyle;
-
 
   ctx.fill();
 
@@ -3728,12 +4015,10 @@ async function createShareImage() {
     return;
   }
 
-
   document.getElementById(
     "message"
   ).textContent =
     "シェア画像を作成中…";
-
 
   currentImageUrls =
     await Promise.all(
@@ -3745,30 +4030,24 @@ async function createShareImage() {
       )
     );
 
-
   const canvas =
     document.createElement(
       "canvas"
     );
 
-
   canvas.width =
     1080;
 
-
   canvas.height =
     1350;
-
 
   const ctx =
     canvas.getContext(
       "2d"
     );
 
-
   ctx.fillStyle =
     "#f5f6f8";
-
 
   ctx.fillRect(
     0,
@@ -3776,7 +4055,6 @@ async function createShareImage() {
     canvas.width,
     canvas.height
   );
-
 
   drawRoundedRect(
     ctx,
@@ -3788,18 +4066,14 @@ async function createShareImage() {
     "#ffffff"
   );
 
-
   ctx.textAlign =
     "center";
-
 
   ctx.fillStyle =
     "#222";
 
-
   ctx.font =
     "900 60px sans-serif";
-
 
   ctx.fillText(
     "🎲 ポケくじ",
@@ -3807,14 +4081,11 @@ async function createShareImage() {
     120
   );
 
-
   ctx.fillStyle =
     "#666";
 
-
   ctx.font =
     "700 25px sans-serif";
-
 
   ctx.fillText(
     game,
@@ -3822,21 +4093,17 @@ async function createShareImage() {
     165
   );
 
-
   ctx.fillStyle =
     "#777";
 
-
   ctx.font =
     "700 29px sans-serif";
-
 
   ctx.fillText(
     rule,
     540,
     205
   );
-
 
   const loadedImages =
     await Promise.all(
@@ -3848,30 +4115,23 @@ async function createShareImage() {
       )
     );
 
-
   const cardWidth =
     430;
-
 
   const cardHeight =
     285;
 
-
   const startX =
     90;
-
 
   const startY =
     235;
 
-
   const gapX =
     40;
 
-
   const gapY =
     25;
-
 
   for (
     let i = 0;
@@ -3882,12 +4142,10 @@ async function createShareImage() {
     const col =
       i % 2;
 
-
     const row =
       Math.floor(
         i / 2
       );
-
 
     const x =
       startX +
@@ -3897,7 +4155,6 @@ async function createShareImage() {
         gapX
       );
 
-
     const y =
       startY +
       row *
@@ -3906,12 +4163,10 @@ async function createShareImage() {
         gapY
       );
 
-
     const isMega =
       isChampions() &&
       currentMegaEnabled &&
       i === currentMegaIndex;
-
 
     drawRoundedRect(
       ctx,
@@ -3925,7 +4180,6 @@ async function createShareImage() {
         : "#f3f4f6"
     );
 
-
     if (
       isMega
     ) {
@@ -3933,10 +4187,8 @@ async function createShareImage() {
       ctx.fillStyle =
         "#b87300";
 
-
       ctx.font =
         "900 20px sans-serif";
-
 
       ctx.fillText(
         "⭐ メガ枠",
@@ -3946,16 +4198,13 @@ async function createShareImage() {
       );
     }
 
-
     const img =
       loadedImages[i];
-
 
     if (img) {
 
       const imageSize =
         120;
-
 
       ctx.drawImage(
         img,
@@ -3970,14 +4219,11 @@ async function createShareImage() {
       );
     }
 
-
     ctx.fillStyle =
       "#222";
 
-
     ctx.font =
       "800 27px sans-serif";
-
 
     ctx.fillText(
       currentTeam[i],
@@ -3987,16 +4233,13 @@ async function createShareImage() {
       cardWidth - 30
     );
 
-
     ctx.fillStyle =
       isMega
         ? "#9a6500"
         : "#666";
 
-
     ctx.font =
       "600 21px sans-serif";
-
 
     ctx.fillText(
       `持ち物：${currentItems[i]}`,
@@ -4006,10 +4249,8 @@ async function createShareImage() {
       cardWidth - 30
     );
 
-
     ctx.fillStyle =
       "#666";
-
 
     ctx.fillText(
       `性格：${currentNatures[i]}`,
@@ -4020,21 +4261,17 @@ async function createShareImage() {
     );
   }
 
-
   ctx.fillStyle =
     "#888";
 
-
   ctx.font =
     "600 23px sans-serif";
-
 
   ctx.fillText(
     `#ポケくじ  ${getGameHashtag()}`,
     540,
     1225
   );
-
 
   const blob =
     await new Promise(
@@ -4048,7 +4285,6 @@ async function createShareImage() {
       }
     );
 
-
   if (!blob) {
 
     document.getElementById(
@@ -4056,14 +4292,11 @@ async function createShareImage() {
     ).textContent =
       "シェア画像を作成できませんでした。";
 
-
     return;
   }
 
-
   shareImageBlob =
     blob;
-
 
   if (
     previewObjectUrl
@@ -4074,25 +4307,21 @@ async function createShareImage() {
     );
   }
 
-
   previewObjectUrl =
     URL.createObjectURL(
       blob
     );
-
 
   document.getElementById(
     "sharePreviewImage"
   ).src =
     previewObjectUrl;
 
-
   document.getElementById(
     "sharePreview"
   ).classList.add(
     "show"
   );
-
 
   document.getElementById(
     "message"
@@ -4109,7 +4338,6 @@ function hideOldPreview() {
     "show"
   );
 
-
   shareImageBlob =
     null;
 }
@@ -4123,7 +4351,6 @@ async function shareResult() {
     return;
   }
 
-
   if (
     !shareImageBlob
   ) {
@@ -4131,19 +4358,16 @@ async function shareResult() {
     await createShareImage();
   }
 
-
   if (
     !shareImageBlob
   ) {
     return;
   }
 
-
   const teamText =
     currentTeam.join(
       " / "
     );
-
 
   const megaText =
     isChampions() &&
@@ -4153,7 +4377,6 @@ async function shareResult() {
       ? `\n⭐ メガ枠：${currentTeam[currentMegaIndex]}（${currentMegaStone}）\n`
 
       : "";
-
 
   const shareText =
 `🎲 ポケくじでランダム構築！
@@ -4165,10 +4388,8 @@ ${teamText}
 ${megaText}
 #ポケくじ ${getGameHashtag()}`;
 
-
   const shareUrl =
     "https://nico25dayo.github.io/poke-kuji/";
-
 
   const file =
     new File(
@@ -4180,14 +4401,12 @@ ${megaText}
       }
     );
 
-
   const canShareFile =
     navigator.canShare &&
     navigator.canShare({
       files:
         [file]
     });
-
 
   if (
     navigator.share &&
@@ -4217,10 +4436,8 @@ ${megaText}
       );
     }
 
-
     return;
   }
-
 
   if (
     navigator.share
@@ -4246,10 +4463,8 @@ ${megaText}
       );
     }
 
-
     return;
   }
-
 
   await navigator.clipboard
     .writeText(
@@ -4257,7 +4472,6 @@ ${megaText}
       "\n" +
       shareUrl
     );
-
 
   document.getElementById(
     "message"
@@ -4274,12 +4488,10 @@ function askOnX() {
     return;
   }
 
-
   const teamText =
     currentTeam.join(
       " / "
     );
-
 
   const megaText =
     isChampions() &&
@@ -4289,7 +4501,6 @@ function askOnX() {
       ? `\n⭐ メガ枠：${currentTeam[currentMegaIndex]}（${currentMegaStone}）\n`
 
       : "";
-
 
   const text =
 `🎲 ポケくじでこの6匹が出ました！
@@ -4303,10 +4514,8 @@ ${megaText}
 
 #ポケくじ ${getGameHashtag()}`;
 
-
   const siteUrl =
     "https://nico25dayo.github.io/poke-kuji/";
-
 
   const xUrl =
     "https://twitter.com/intent/tweet?text=" +
@@ -4317,7 +4526,6 @@ ${megaText}
     encodeURIComponent(
       siteUrl
     );
-
 
   window.open(
     xUrl,
@@ -4337,32 +4545,25 @@ function resetDraw() {
   currentNatures = [];
   currentImageUrls = [];
 
-
   lockedSlots =
     Array(6).fill(false);
-
 
   currentMegaEnabled =
     false;
 
-
   currentMegaIndex =
     -1;
-
 
   currentMegaStone =
     "";
 
-
   shareImageBlob =
     null;
-
 
   const slots =
     document.querySelectorAll(
       ".pokemon"
     );
-
 
   slots.forEach(
     slot => {
@@ -4370,11 +4571,9 @@ function resetDraw() {
       slot.textContent =
         "？";
 
-
       slot.classList.add(
         "empty"
       );
-
 
       slot.classList.remove(
         "mega",
@@ -4383,36 +4582,29 @@ function resetDraw() {
     }
   );
 
-
   document.getElementById(
     "imageButton"
   ).style.display =
     "none";
-
 
   document.getElementById(
     "shareButton"
   ).style.display =
     "none";
 
-
   document.getElementById(
     "askButton"
   ).style.display =
     "none";
-
 
   document.getElementById(
     "favoriteButton"
   ).style.display =
     "none";
 
-
   hideOldPreview();
 
-
   updateDrawButtonLabel();
-
 
   document.getElementById(
     "message"
