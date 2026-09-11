@@ -119,6 +119,7 @@
     }
 
     .draw-button,
+    .image-button,
     .share-button,
     .sub-button {
       width: 100%;
@@ -134,6 +135,14 @@
       background: #222;
       color: #fff;
       margin-bottom: 12px;
+    }
+
+    .image-button {
+      border: none;
+      background: #666;
+      color: #fff;
+      margin-bottom: 12px;
+      display: none;
     }
 
     .share-button {
@@ -156,6 +165,22 @@
       color: #888;
       font-size: 13px;
       line-height: 1.7;
+    }
+
+    .share-preview {
+      margin-top: 24px;
+      display: none;
+    }
+
+    .share-preview.show {
+      display: block;
+    }
+
+    .share-preview img {
+      width: 100%;
+      border-radius: 16px;
+      display: block;
+      border: 1px solid #e5e5e5;
     }
   </style>
 </head>
@@ -187,6 +212,10 @@
       🎲 6匹を抽選する
     </button>
 
+    <button id="imageButton" class="image-button" onclick="createShareImage()">
+      📸 シェア画像を作る
+    </button>
+
     <button id="shareButton" class="share-button" onclick="shareResult()">
       📤 結果をシェア
     </button>
@@ -194,6 +223,10 @@
     <button class="sub-button" onclick="resetDraw()">
       リセット
     </button>
+
+    <div id="sharePreview" class="share-preview">
+      <img id="sharePreviewImage" alt="ポケくじ シェア画像">
+    </div>
 
     <div id="message" class="message">
       選択したルールから、重複なしで6匹を抽選します。
@@ -220,6 +253,8 @@
     let currentTeam = [];
     let currentItems = [];
     let currentNatures = [];
+    let currentImageUrls = [];
+    let shareImageBlob = null;
 
     function getPokemonPool() {
       if (game === "Pokémon Champions") {
@@ -328,6 +363,8 @@
       const imageUrl =
         await getPokemonImage(pokemonName);
 
+      currentImageUrls[index] = imageUrl || "";
+
       if (imageUrl) {
         slot.innerHTML = `
           <img src="${imageUrl}" alt="${pokemonName}">
@@ -359,17 +396,24 @@
         shuffleArray(itemPool).slice(0, 6);
 
       currentNatures = [];
+      currentImageUrls = [];
+      shareImageBlob = null;
 
       for (let i = 0; i < 6; i++) {
         currentNatures.push(getRandomNature());
       }
 
-      for (let i = 0; i < 6; i++) {
-        renderSlot(i);
-      }
+      await Promise.all(
+        currentTeam.map((_, index) => renderSlot(index))
+      );
+
+      document.getElementById("imageButton").style.display =
+        "block";
 
       document.getElementById("shareButton").style.display =
         "block";
+
+      document.getElementById("sharePreview").classList.remove("show");
 
       document.getElementById("message").textContent =
         "抽選完了！6匹・持ち物・性格を決定しました。";
@@ -429,15 +473,180 @@
       currentNatures[index] =
         getRandomNature();
 
+      shareImageBlob = null;
+
+      document.getElementById("sharePreview").classList.remove("show");
+
       await renderSlot(index);
 
       document.getElementById("message").textContent =
         `${oldPokemon}を引き直しました。`;
     }
 
+    function loadImageForCanvas(src) {
+      return new Promise((resolve) => {
+        if (!src) {
+          resolve(null);
+          return;
+        }
+
+        const img = new Image();
+        img.crossOrigin = "anonymous";
+
+        img.onload = () => resolve(img);
+        img.onerror = () => resolve(null);
+
+        img.src = src;
+      });
+    }
+
+    async function createShareImage() {
+      if (currentTeam.length !== 6) {
+        return;
+      }
+
+      document.getElementById("message").textContent =
+        "シェア画像を作成中…";
+
+      const canvas =
+        document.createElement("canvas");
+
+      const ctx =
+        canvas.getContext("2d");
+
+      canvas.width = 1080;
+      canvas.height = 1350;
+
+      ctx.fillStyle = "#f5f6f8";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      ctx.fillStyle = "#ffffff";
+      ctx.roundRect(60, 60, 960, 1230, 36);
+      ctx.fill();
+
+      ctx.fillStyle = "#222";
+      ctx.font = "900 64px sans-serif";
+      ctx.textAlign = "center";
+      ctx.fillText("🎲 ポケくじ", 540, 150);
+
+      ctx.fillStyle = "#777";
+      ctx.font = "700 30px sans-serif";
+      ctx.fillText(rule, 540, 205);
+
+      const loadedImages =
+        await Promise.all(
+          currentImageUrls.map(url => loadImageForCanvas(url))
+        );
+
+      const cardWidth = 430;
+      const cardHeight = 280;
+
+      const startX = 90;
+      const startY = 260;
+      const gapX = 40;
+      const gapY = 30;
+
+      for (let i = 0; i < 6; i++) {
+        const col = i % 2;
+        const row = Math.floor(i / 2);
+
+        const x =
+          startX + col * (cardWidth + gapX);
+
+        const y =
+          startY + row * (cardHeight + gapY);
+
+        ctx.fillStyle = "#f3f4f6";
+        ctx.roundRect(
+          x,
+          y,
+          cardWidth,
+          cardHeight,
+          28
+        );
+        ctx.fill();
+
+        const img = loadedImages[i];
+
+        if (img) {
+          const imageSize = 125;
+
+          ctx.drawImage(
+            img,
+            x + (cardWidth - imageSize) / 2,
+            y + 15,
+            imageSize,
+            imageSize
+          );
+        }
+
+        ctx.fillStyle = "#222";
+        ctx.font = "800 28px sans-serif";
+        ctx.textAlign = "center";
+        ctx.fillText(
+          currentTeam[i],
+          x + cardWidth / 2,
+          y + 165,
+          cardWidth - 30
+        );
+
+        ctx.fillStyle = "#666";
+        ctx.font = "600 22px sans-serif";
+
+        ctx.fillText(
+          `持ち物：${currentItems[i]}`,
+          x + cardWidth / 2,
+          y + 205,
+          cardWidth - 30
+        );
+
+        ctx.fillText(
+          `性格：${currentNatures[i]}`,
+          x + cardWidth / 2,
+          y + 240,
+          cardWidth - 30
+        );
+      }
+
+      ctx.fillStyle = "#888";
+      ctx.font = "600 24px sans-serif";
+      ctx.textAlign = "center";
+      ctx.fillText(
+        "#ポケくじ  #ポケモンチャンピオンズ",
+        540,
+        1230
+      );
+
+      const blob =
+        await new Promise(resolve => {
+          canvas.toBlob(
+            resolve,
+            "image/png",
+            1
+          );
+        });
+
+      shareImageBlob = blob;
+
+      const previewUrl =
+        URL.createObjectURL(blob);
+
+      document.getElementById("sharePreviewImage").src =
+        previewUrl;
+
+      document.getElementById("sharePreview").classList.add("show");
+
+      document.getElementById("message").textContent =
+        "シェア画像を作成しました！";
+    }
+
     async function shareResult() {
       if (currentTeam.length !== 6) {
         return;
+      }
+
+      if (!shareImageBlob) {
+        await createShareImage();
       }
 
       const teamText =
@@ -455,6 +664,36 @@ ${teamText}
       const shareUrl =
         "https://nico25dayo.github.io/poke-kuji/";
 
+      const file =
+        new File(
+          [shareImageBlob],
+          "poke-kuji-result.png",
+          {
+            type: "image/png"
+          }
+        );
+
+      const canShareFile =
+        navigator.canShare &&
+        navigator.canShare({
+          files: [file]
+        });
+
+      if (navigator.share && canShareFile) {
+        try {
+          await navigator.share({
+            title: "ポケくじ",
+            text: shareText,
+            url: shareUrl,
+            files: [file]
+          });
+        } catch (error) {
+          console.log("共有をキャンセルしました。");
+        }
+
+        return;
+      }
+
       if (navigator.share) {
         try {
           await navigator.share({
@@ -465,21 +704,25 @@ ${teamText}
         } catch (error) {
           console.log("共有をキャンセルしました。");
         }
-      } else {
-        const copyText =
-          shareText + "\n" + shareUrl;
 
-        await navigator.clipboard.writeText(copyText);
-
-        document.getElementById("message").textContent =
-          "共有文をコピーしました！";
+        return;
       }
+
+      const copyText =
+        shareText + "\n" + shareUrl;
+
+      await navigator.clipboard.writeText(copyText);
+
+      document.getElementById("message").textContent =
+        "共有文をコピーしました！";
     }
 
     function resetDraw() {
       currentTeam = [];
       currentItems = [];
       currentNatures = [];
+      currentImageUrls = [];
+      shareImageBlob = null;
 
       const slots =
         document.querySelectorAll(".pokemon");
@@ -489,8 +732,13 @@ ${teamText}
         slot.classList.add("empty");
       });
 
+      document.getElementById("imageButton").style.display =
+        "none";
+
       document.getElementById("shareButton").style.display =
         "none";
+
+      document.getElementById("sharePreview").classList.remove("show");
 
       document.getElementById("message").textContent =
         "選択したルールから、重複なしで6匹を抽選します。";
