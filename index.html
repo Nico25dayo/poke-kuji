@@ -300,21 +300,22 @@
     }
 
 
-   function goToDraw() {
+    function goToDraw() {
 
-  if (!selectedGame) {
-    return;
-  }
+      if (!selectedGame) {
+        return;
+      }
 
-  const url =
-    "draw.html?game=" +
-    encodeURIComponent(selectedGame) +
-    "&rule=" +
-    encodeURIComponent(selectedRule);
+      const url =
+        "draw.html?game=" +
+        encodeURIComponent(selectedGame) +
+        "&rule=" +
+        encodeURIComponent(selectedRule) +
+        "&v=2";
 
-  window.location.href = url;
+      window.location.href = url;
 
-}
+    }
 
   </script>
 
