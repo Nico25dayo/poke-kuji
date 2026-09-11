@@ -72,7 +72,7 @@
     }
 
     .pokemon {
-      min-height: 255px;
+      min-height: 300px;
       border-radius: 16px;
       background: #f3f4f6;
       display: flex;
@@ -135,10 +135,12 @@
     }
 
     .lock-button,
-    .reroll-button {
+    .reroll-button,
+    .item-button,
+    .nature-button {
       width: 100%;
       border-radius: 10px;
-      padding: 8px 7px;
+      padding: 8px 6px;
       font-size: 11px;
       font-weight: 700;
       cursor: pointer;
@@ -161,7 +163,19 @@
       color: #444;
     }
 
-    .reroll-button:disabled {
+    .item-button {
+      border: 1px solid #d6a33c;
+      background: #fffaf0;
+      color: #8b6200;
+    }
+
+    .nature-button {
+      border: 1px solid #a48ad4;
+      background: #faf7ff;
+      color: #674c99;
+    }
+
+    button:disabled {
       opacity: .4;
       cursor: default;
     }
@@ -272,31 +286,19 @@
     <div class="pokemon empty">？</div>
   </div>
 
-  <button
-    id="drawButton"
-    class="draw-button"
-    onclick="drawPokemon()">
+  <button id="drawButton" class="draw-button" onclick="drawPokemon()">
     🎲 6匹を抽選する
   </button>
 
-  <button
-    id="imageButton"
-    class="image-button"
-    onclick="createShareImage()">
+  <button id="imageButton" class="image-button" onclick="createShareImage()">
     📸 シェア画像を作る
   </button>
 
-  <button
-    id="shareButton"
-    class="share-button"
-    onclick="shareResult()">
+  <button id="shareButton" class="share-button" onclick="shareResult()">
     📤 結果をシェア
   </button>
 
-  <button
-    id="askButton"
-    class="ask-button"
-    onclick="askOnX()">
+  <button id="askButton" class="ask-button" onclick="askOnX()">
     𝕏 この6匹でみんなに相談
   </button>
 
@@ -331,379 +333,711 @@
 
 
 <script>
-  const params = new URLSearchParams(window.location.search);
+const params = new URLSearchParams(window.location.search);
 
-  const game = params.get("game") || "";
-  const rule = params.get("rule") || "";
+const game = params.get("game") || "";
+const rule = params.get("rule") || "";
 
-  document.getElementById("gameName").textContent = game;
-  document.getElementById("ruleName").textContent = rule;
-
-
-  let currentTeam = [];
-  let currentItems = [];
-  let currentNatures = [];
-  let currentImageUrls = [];
-
-  let lockedSlots = Array(6).fill(false);
-
-  let currentMegaEnabled = false;
-  let currentMegaIndex = -1;
-  let currentMegaStone = "";
-
-  let shareImageBlob = null;
-  let previewObjectUrl = null;
+document.getElementById("gameName").textContent = game;
+document.getElementById("ruleName").textContent = rule;
 
 
-  const pokemonNatures = [
-    "さみしがり",
-    "いじっぱり",
-    "やんちゃ",
-    "ゆうかん",
-    "ずぶとい",
-    "わんぱく",
-    "のうてんき",
-    "のんき",
-    "ひかえめ",
-    "おっとり",
-    "うっかりや",
-    "れいせい",
-    "おだやか",
-    "おとなしい",
-    "しんちょう",
-    "なまいき",
-    "おくびょう",
-    "せっかち",
-    "ようき",
-    "むじゃき",
-    "てれや",
-    "がんばりや",
-    "すなお",
-    "きまぐれ",
-    "まじめ"
+let currentTeam = [];
+let currentItems = [];
+let currentNatures = [];
+let currentImageUrls = [];
+
+let lockedSlots = Array(6).fill(false);
+
+let currentMegaEnabled = false;
+let currentMegaIndex = -1;
+let currentMegaStone = "";
+
+let shareImageBlob = null;
+let previewObjectUrl = null;
+
+
+const pokemonNatures = [
+  "さみしがり",
+  "いじっぱり",
+  "やんちゃ",
+  "ゆうかん",
+  "ずぶとい",
+  "わんぱく",
+  "のうてんき",
+  "のんき",
+  "ひかえめ",
+  "おっとり",
+  "うっかりや",
+  "れいせい",
+  "おだやか",
+  "おとなしい",
+  "しんちょう",
+  "なまいき",
+  "おくびょう",
+  "せっかち",
+  "ようき",
+  "むじゃき",
+  "てれや",
+  "がんばりや",
+  "すなお",
+  "きまぐれ",
+  "まじめ"
+];
+
+
+function isChampions() {
+  return game === "Pokémon Champions";
+}
+
+
+function isSV() {
+  return game === "スカーレット・バイオレット";
+}
+
+
+function isSVRegJ() {
+  return isSV() && rule === "レギュレーション J";
+}
+
+
+function getGameHashtag() {
+  return isSV()
+    ? "#ポケモンSV"
+    : "#ポケモンチャンピオンズ";
+}
+
+
+function getRandomNature(exclude = "") {
+
+  const available =
+    pokemonNatures.filter(
+      nature =>
+        nature !== exclude
+    );
+
+  return available[
+    Math.floor(
+      Math.random() *
+      available.length
+    )
   ];
+}
 
 
-  function isChampions() {
-    return game === "Pokémon Champions";
+function getPokemonPool() {
+
+  if (isChampions()) {
+
+    if (rule === "レギュレーション M-A") {
+      return championsMA;
+    }
+
+    if (rule === "レギュレーション M-B") {
+      return championsMB;
+    }
+
+    if (rule === "レギュレーション M-C") {
+      return championsMC;
+    }
   }
 
 
-  function isSV() {
-    return game === "スカーレット・バイオレット";
+  if (isSV()) {
+
+    if (rule === "レギュレーション A") {
+      return svRegA;
+    }
+
+    if (rule === "レギュレーション B") {
+      return svRegB;
+    }
+
+    if (rule === "レギュレーション H") {
+      return svRegH;
+    }
+
+    if (rule === "レギュレーション J") {
+      return svRegJ;
+    }
+  }
+
+  return [];
+}
+
+
+function getItemPool() {
+
+  if (isChampions()) {
+
+    if (rule === "レギュレーション M-A") {
+      return championsItemsMA;
+    }
+
+    if (rule === "レギュレーション M-B") {
+      return championsItemsMB;
+    }
+
+    if (rule === "レギュレーション M-C") {
+      return championsItemsMC;
+    }
   }
 
 
-  function isSVRegJ() {
-    return isSV() && rule === "レギュレーション J";
+  if (isSV()) {
+
+    if (rule === "レギュレーション A") {
+      return svItemsA;
+    }
+
+    if (rule === "レギュレーション B") {
+      return svItemsB;
+    }
+
+    if (rule === "レギュレーション H") {
+      return svItemsH;
+    }
+
+    if (rule === "レギュレーション J") {
+      return svItemsJ;
+    }
   }
 
-
-  function getGameHashtag() {
-    return isSV()
-      ? "#ポケモンSV"
-      : "#ポケモンチャンピオンズ";
-  }
+  return [];
+}
 
 
-  function getRandomNature() {
-    return pokemonNatures[
-      Math.floor(Math.random() * pokemonNatures.length)
+function shuffleArray(array) {
+
+  const shuffled = [...array];
+
+  for (
+    let i = shuffled.length - 1;
+    i > 0;
+    i--
+  ) {
+
+    const j =
+      Math.floor(
+        Math.random() *
+        (i + 1)
+      );
+
+    [
+      shuffled[i],
+      shuffled[j]
+    ] = [
+      shuffled[j],
+      shuffled[i]
     ];
   }
 
-
-  function getPokemonPool() {
-
-    if (isChampions()) {
-
-      if (rule === "レギュレーション M-A") {
-        return championsMA;
-      }
-
-      if (rule === "レギュレーション M-B") {
-        return championsMB;
-      }
-
-      if (rule === "レギュレーション M-C") {
-        return championsMC;
-      }
-    }
+  return shuffled;
+}
 
 
-    if (isSV()) {
+function getSpeciesKey(name) {
 
-      if (rule === "レギュレーション A") {
-        return svRegA;
-      }
-
-      if (rule === "レギュレーション B") {
-        return svRegB;
-      }
-
-      if (rule === "レギュレーション H") {
-        return svRegH;
-      }
-
-      if (rule === "レギュレーション J") {
-        return svRegJ;
-      }
-    }
-
-    return [];
+  if (!name) {
+    return "";
   }
 
-
-  function getItemPool() {
-
-    if (isChampions()) {
-
-      if (rule === "レギュレーション M-A") {
-        return championsItemsMA;
-      }
-
-      if (rule === "レギュレーション M-B") {
-        return championsItemsMB;
-      }
-
-      if (rule === "レギュレーション M-C") {
-        return championsItemsMC;
-      }
-    }
+  return name
+    .replace(/（.*?）/g, "")
+    .trim();
+}
 
 
-    if (isSV()) {
+function hasSameSpecies(
+  team,
+  pokemonName
+) {
 
-      if (rule === "レギュレーション A") {
-        return svItemsA;
-      }
-
-      if (rule === "レギュレーション B") {
-        return svItemsB;
-      }
-
-      if (rule === "レギュレーション H") {
-        return svItemsH;
-      }
-
-      if (rule === "レギュレーション J") {
-        return svItemsJ;
-      }
-    }
-
-    return [];
-  }
-
-
-  function shuffleArray(array) {
-
-    const shuffled = [...array];
-
-    for (let i = shuffled.length - 1; i > 0; i--) {
-
-      const j =
-        Math.floor(
-          Math.random() * (i + 1)
-        );
-
-      [
-        shuffled[i],
-        shuffled[j]
-      ] = [
-        shuffled[j],
-        shuffled[i]
-      ];
-    }
-
-    return shuffled;
-  }
-
-
-  function getSpeciesKey(name) {
-
-    if (!name) {
-      return "";
-    }
-
-    return name
-      .replace(/（.*?）/g, "")
-      .trim();
-  }
-
-
-  function hasSameSpecies(team, pokemonName) {
-
-    const key =
-      getSpeciesKey(pokemonName);
-
-    return team.some(
-      pokemon =>
-        pokemon &&
-        getSpeciesKey(pokemon) === key
+  const key =
+    getSpeciesKey(
+      pokemonName
     );
+
+  return team.some(
+    pokemon =>
+      pokemon &&
+      getSpeciesKey(
+        pokemon
+      ) === key
+  );
+}
+
+
+function isSVJSpecialPokemon(
+  pokemonName
+) {
+
+  if (
+    typeof svRegJSpecial ===
+    "undefined"
+  ) {
+    return false;
   }
 
+  return svRegJSpecial.includes(
+    pokemonName
+  );
+}
 
-  function isSVJSpecialPokemon(pokemonName) {
+
+function countSpecialPokemon(
+  team
+) {
+
+  return team.filter(
+    pokemon =>
+      pokemon &&
+      isSVJSpecialPokemon(
+        pokemon
+      )
+  ).length;
+}
+
+
+function chooseMegaOption(
+  pokemonName
+) {
+
+  if (!isChampions()) {
+    return null;
+  }
+
+  const options =
+    getMegaOptions(
+      pokemonName,
+      rule
+    );
+
+  if (options.length === 0) {
+    return null;
+  }
+
+  return options[
+    Math.floor(
+      Math.random() *
+      options.length
+    )
+  ];
+}
+
+
+function buildNormalTeam(
+  pool
+) {
+
+  const shuffled =
+    shuffleArray(pool);
+
+  const team = [];
+
+  for (
+    const pokemon
+    of shuffled
+  ) {
 
     if (
-      typeof svRegJSpecial ===
-      "undefined"
+      hasSameSpecies(
+        team,
+        pokemon
+      )
+    ) {
+      continue;
+    }
+
+    team.push(pokemon);
+
+    if (
+      team.length === 6
+    ) {
+      break;
+    }
+  }
+
+  return team;
+}
+
+
+function buildSVRegJTeam(
+  pool
+) {
+
+  const shuffled =
+    shuffleArray(pool);
+
+  const team = [];
+
+  let specialCount = 0;
+
+  for (
+    const pokemon
+    of shuffled
+  ) {
+
+    if (
+      hasSameSpecies(
+        team,
+        pokemon
+      )
+    ) {
+      continue;
+    }
+
+    const isSpecial =
+      isSVJSpecialPokemon(
+        pokemon
+      );
+
+    if (
+      isSpecial &&
+      specialCount >= 2
+    ) {
+      continue;
+    }
+
+    team.push(pokemon);
+
+    if (isSpecial) {
+      specialCount++;
+    }
+
+    if (
+      team.length === 6
+    ) {
+      break;
+    }
+  }
+
+  return team;
+}
+
+
+function buildTeam() {
+
+  const pool =
+    getPokemonPool();
+
+  const itemPool =
+    getItemPool();
+
+
+  if (isSV()) {
+
+    currentMegaEnabled = false;
+    currentMegaIndex = -1;
+    currentMegaStone = "";
+
+    currentTeam =
+      isSVRegJ()
+        ? buildSVRegJTeam(pool)
+        : buildNormalTeam(pool);
+
+    currentItems =
+      shuffleArray(
+        itemPool
+      ).slice(0, 6);
+
+    return;
+  }
+
+
+  currentMegaEnabled =
+    Math.random() < 0.5;
+
+  currentMegaIndex = -1;
+  currentMegaStone = "";
+
+
+  if (currentMegaEnabled) {
+
+    const megaCandidates =
+      pool.filter(
+        name =>
+          getMegaOptions(
+            name,
+            rule
+          ).length > 0
+      );
+
+
+    if (
+      megaCandidates.length > 0
+    ) {
+
+      const megaPokemon =
+        megaCandidates[
+          Math.floor(
+            Math.random() *
+            megaCandidates.length
+          )
+        ];
+
+
+      const remainingPool =
+        pool.filter(
+          name =>
+            getSpeciesKey(name) !==
+            getSpeciesKey(
+              megaPokemon
+            )
+        );
+
+
+      const otherFive =
+        buildNormalTeam(
+          remainingPool
+        ).slice(0, 5);
+
+
+      currentTeam =
+        shuffleArray([
+          megaPokemon,
+          ...otherFive
+        ]);
+
+
+      currentMegaIndex =
+        currentTeam.indexOf(
+          megaPokemon
+        );
+
+
+      const megaOption =
+        chooseMegaOption(
+          megaPokemon
+        );
+
+
+      currentMegaStone =
+        megaOption
+          ? megaOption.stone
+          : "";
+
+    } else {
+
+      currentMegaEnabled =
+        false;
+
+      currentTeam =
+        buildNormalTeam(
+          pool
+        );
+    }
+
+  } else {
+
+    currentTeam =
+      buildNormalTeam(
+        pool
+      );
+  }
+
+
+  currentItems =
+    shuffleArray(
+      itemPool
+    ).slice(0, 6);
+
+
+  if (
+    currentMegaEnabled &&
+    currentMegaIndex >= 0 &&
+    currentMegaStone
+  ) {
+
+    currentItems[
+      currentMegaIndex
+    ] =
+      currentMegaStone;
+  }
+}
+
+
+function buildSVTeamWithLocks() {
+
+  const pool =
+    getPokemonPool();
+
+  const nextTeam =
+    Array(6).fill("");
+
+
+  for (
+    let i = 0;
+    i < 6;
+    i++
+  ) {
+
+    if (lockedSlots[i]) {
+
+      nextTeam[i] =
+        currentTeam[i];
+    }
+  }
+
+
+  let specialCount =
+    isSVRegJ()
+      ? countSpecialPokemon(
+          nextTeam
+        )
+      : 0;
+
+
+  const shuffled =
+    shuffleArray(pool);
+
+
+  for (
+    let i = 0;
+    i < 6;
+    i++
+  ) {
+
+    if (lockedSlots[i]) {
+      continue;
+    }
+
+
+    let foundIndex = -1;
+
+
+    for (
+      let j = 0;
+      j < shuffled.length;
+      j++
+    ) {
+
+      const pokemon =
+        shuffled[j];
+
+
+      if (
+        hasSameSpecies(
+          nextTeam,
+          pokemon
+        )
+      ) {
+        continue;
+      }
+
+
+      if (
+        isSVRegJ() &&
+        specialCount >= 2 &&
+        isSVJSpecialPokemon(
+          pokemon
+        )
+      ) {
+        continue;
+      }
+
+
+      foundIndex = j;
+      break;
+    }
+
+
+    if (
+      foundIndex < 0
     ) {
       return false;
     }
 
-    return svRegJSpecial.includes(
-      pokemonName
-    );
-  }
+
+    const pokemon =
+      shuffled.splice(
+        foundIndex,
+        1
+      )[0];
 
 
-  function countSpecialPokemon(team) {
-
-    return team.filter(
-      pokemon =>
-        pokemon &&
-        isSVJSpecialPokemon(pokemon)
-    ).length;
-  }
+    nextTeam[i] =
+      pokemon;
 
 
-  function chooseMegaOption(pokemonName) {
-
-    if (!isChampions()) {
-      return null;
-    }
-
-    const options =
-      getMegaOptions(
-        pokemonName,
-        rule
-      );
-
-    if (options.length === 0) {
-      return null;
-    }
-
-    return options[
-      Math.floor(
-        Math.random() *
-        options.length
+    if (
+      isSVRegJ() &&
+      isSVJSpecialPokemon(
+        pokemon
       )
-    ];
+    ) {
+
+      specialCount++;
+    }
   }
 
 
-  function buildNormalTeam(pool) {
+  currentTeam =
+    nextTeam;
 
-    const shuffled =
-      shuffleArray(pool);
+  currentMegaEnabled = false;
+  currentMegaIndex = -1;
+  currentMegaStone = "";
 
-    const team = [];
+  return true;
+}
 
-    for (const pokemon of shuffled) {
 
-      if (
-        hasSameSpecies(
-          team,
-          pokemon
-        )
-      ) {
-        continue;
-      }
+function buildChampionsTeamWithLocks() {
 
-      team.push(pokemon);
+  const pool =
+    getPokemonPool();
 
-      if (team.length === 6) {
-        break;
-      }
+  const nextTeam =
+    Array(6).fill("");
+
+
+  for (
+    let i = 0;
+    i < 6;
+    i++
+  ) {
+
+    if (lockedSlots[i]) {
+
+      nextTeam[i] =
+        currentTeam[i];
     }
-
-    return team;
   }
 
 
-  function buildSVRegJTeam(pool) {
+  const oldMegaIndex =
+    currentMegaIndex;
 
-    const shuffled =
-      shuffleArray(pool);
-
-    const team = [];
-
-    let specialCount = 0;
-
-    for (const pokemon of shuffled) {
-
-      if (
-        hasSameSpecies(
-          team,
-          pokemon
-        )
-      ) {
-        continue;
-      }
-
-      const isSpecial =
-        isSVJSpecialPokemon(
-          pokemon
-        );
-
-      if (
-        isSpecial &&
-        specialCount >= 2
-      ) {
-        continue;
-      }
-
-      team.push(pokemon);
-
-      if (isSpecial) {
-        specialCount++;
-      }
-
-      if (team.length === 6) {
-        break;
-      }
-    }
-
-    return team;
-  }
+  const oldMegaStone =
+    currentMegaStone;
 
 
-  function buildTeam() {
+  const lockedMegaIndex =
+    (
+      currentMegaEnabled &&
+      oldMegaIndex >= 0 &&
+      lockedSlots[
+        oldMegaIndex
+      ]
+    )
+      ? oldMegaIndex
+      : -1;
 
-    const pool =
-      getPokemonPool();
 
-    const itemPool =
-      getItemPool();
+  if (
+    lockedMegaIndex >= 0
+  ) {
 
+    currentMegaEnabled = true;
 
-    if (isSV()) {
+    currentMegaIndex =
+      lockedMegaIndex;
 
-      currentMegaEnabled = false;
-      currentMegaIndex = -1;
-      currentMegaStone = "";
+    currentMegaStone =
+      oldMegaStone;
 
-      if (isSVRegJ()) {
-
-        currentTeam =
-          buildSVRegJTeam(pool);
-
-      } else {
-
-        currentTeam =
-          buildNormalTeam(pool);
-      }
-
-      currentItems =
-        shuffleArray(
-          itemPool
-        ).slice(0, 6);
-
-      return;
-    }
-
+  } else {
 
     currentMegaEnabled =
       Math.random() < 0.5;
@@ -714,17 +1048,47 @@
 
     if (currentMegaEnabled) {
 
+      const unlockedIndices = [];
+
+      for (
+        let i = 0;
+        i < 6;
+        i++
+      ) {
+
+        if (!lockedSlots[i]) {
+          unlockedIndices.push(i);
+        }
+      }
+
+
       const megaCandidates =
         pool.filter(
-          name =>
-            getMegaOptions(
-              name,
-              rule
-            ).length > 0
+          pokemon => {
+
+            if (
+              hasSameSpecies(
+                nextTeam,
+                pokemon
+              )
+            ) {
+              return false;
+            }
+
+            return (
+              getMegaOptions(
+                pokemon,
+                rule
+              ).length > 0
+            );
+          }
         );
 
 
-      if (megaCandidates.length > 0) {
+      if (
+        unlockedIndices.length > 0 &&
+        megaCandidates.length > 0
+      ) {
 
         const megaPokemon =
           megaCandidates[
@@ -735,33 +1099,23 @@
           ];
 
 
-        const remainingPool =
-          pool.filter(
-            name =>
-              getSpeciesKey(name) !==
-              getSpeciesKey(
-                megaPokemon
-              )
-          );
+        const targetIndex =
+          unlockedIndices[
+            Math.floor(
+              Math.random() *
+              unlockedIndices.length
+            )
+          ];
 
 
-        const otherFive =
-          buildNormalTeam(
-            remainingPool
-          ).slice(0, 5);
-
-
-        currentTeam =
-          shuffleArray([
-            megaPokemon,
-            ...otherFive
-          ]);
+        nextTeam[
+          targetIndex
+        ] =
+          megaPokemon;
 
 
         currentMegaIndex =
-          currentTeam.indexOf(
-            megaPokemon
-          );
+          targetIndex;
 
 
         const megaOption =
@@ -777,1445 +1131,1286 @@
 
       } else {
 
-        currentMegaEnabled = false;
-
-        currentTeam =
-          buildNormalTeam(pool);
+        currentMegaEnabled =
+          false;
       }
-
-    } else {
-
-      currentTeam =
-        buildNormalTeam(pool);
-    }
-
-
-    currentItems =
-      shuffleArray(
-        itemPool
-      ).slice(0, 6);
-
-
-    if (
-      currentMegaEnabled &&
-      currentMegaIndex >= 0 &&
-      currentMegaStone
-    ) {
-
-      currentItems[
-        currentMegaIndex
-      ] =
-        currentMegaStone;
     }
   }
 
 
-  function buildSVTeamWithLocks() {
+  const shuffled =
+    shuffleArray(pool);
 
-    const pool =
-      getPokemonPool();
 
-    const nextTeam =
-      Array(6).fill("");
+  for (
+    let i = 0;
+    i < 6;
+    i++
+  ) {
 
-    for (let i = 0; i < 6; i++) {
-
-      if (lockedSlots[i]) {
-        nextTeam[i] =
-          currentTeam[i];
-      }
+    if (nextTeam[i]) {
+      continue;
     }
 
 
-    let specialCount =
-      isSVRegJ()
-        ? countSpecialPokemon(
-            nextTeam
-          )
-        : 0;
+    let foundIndex = -1;
 
 
-    const shuffled =
-      shuffleArray(pool);
-
-
-    for (let i = 0; i < 6; i++) {
-
-      if (lockedSlots[i]) {
-        continue;
-      }
-
-
-      let foundIndex = -1;
-
-
-      for (
-        let j = 0;
-        j < shuffled.length;
-        j++
-      ) {
-
-        const pokemon =
-          shuffled[j];
-
-
-        if (
-          hasSameSpecies(
-            nextTeam,
-            pokemon
-          )
-        ) {
-          continue;
-        }
-
-
-        if (
-          isSVRegJ() &&
-          specialCount >= 2 &&
-          isSVJSpecialPokemon(
-            pokemon
-          )
-        ) {
-          continue;
-        }
-
-
-        foundIndex = j;
-        break;
-      }
-
-
-      if (foundIndex < 0) {
-        return false;
-      }
-
+    for (
+      let j = 0;
+      j < shuffled.length;
+      j++
+    ) {
 
       const pokemon =
-        shuffled.splice(
-          foundIndex,
-          1
-        )[0];
-
-
-      nextTeam[i] =
-        pokemon;
+        shuffled[j];
 
 
       if (
-        isSVRegJ() &&
-        isSVJSpecialPokemon(
+        hasSameSpecies(
+          nextTeam,
           pokemon
         )
       ) {
-        specialCount++;
-      }
-    }
-
-
-    currentTeam =
-      nextTeam;
-
-    currentMegaEnabled = false;
-    currentMegaIndex = -1;
-    currentMegaStone = "";
-
-    return true;
-  }
-
-
-  function buildChampionsTeamWithLocks() {
-
-    const pool =
-      getPokemonPool();
-
-    const nextTeam =
-      Array(6).fill("");
-
-
-    for (let i = 0; i < 6; i++) {
-
-      if (lockedSlots[i]) {
-        nextTeam[i] =
-          currentTeam[i];
-      }
-    }
-
-
-    const oldMegaIndex =
-      currentMegaIndex;
-
-    const oldMegaStone =
-      currentMegaStone;
-
-
-    const lockedMegaIndex =
-      (
-        currentMegaEnabled &&
-        oldMegaIndex >= 0 &&
-        lockedSlots[
-          oldMegaIndex
-        ]
-      )
-        ? oldMegaIndex
-        : -1;
-
-
-    if (lockedMegaIndex >= 0) {
-
-      currentMegaEnabled = true;
-      currentMegaIndex =
-        lockedMegaIndex;
-      currentMegaStone =
-        oldMegaStone;
-
-    } else {
-
-      currentMegaEnabled =
-        Math.random() < 0.5;
-
-      currentMegaIndex = -1;
-      currentMegaStone = "";
-
-
-      if (currentMegaEnabled) {
-
-        const unlockedIndices = [];
-
-        for (let i = 0; i < 6; i++) {
-
-          if (!lockedSlots[i]) {
-            unlockedIndices.push(i);
-          }
-        }
-
-
-        const megaCandidates =
-          pool.filter(
-            pokemon => {
-
-              if (
-                hasSameSpecies(
-                  nextTeam,
-                  pokemon
-                )
-              ) {
-                return false;
-              }
-
-              return (
-                getMegaOptions(
-                  pokemon,
-                  rule
-                ).length > 0
-              );
-            }
-          );
-
-
-        if (
-          unlockedIndices.length > 0 &&
-          megaCandidates.length > 0
-        ) {
-
-          const megaPokemon =
-            megaCandidates[
-              Math.floor(
-                Math.random() *
-                megaCandidates.length
-              )
-            ];
-
-
-          const targetIndex =
-            unlockedIndices[
-              Math.floor(
-                Math.random() *
-                unlockedIndices.length
-              )
-            ];
-
-
-          nextTeam[targetIndex] =
-            megaPokemon;
-
-
-          currentMegaIndex =
-            targetIndex;
-
-
-          const megaOption =
-            chooseMegaOption(
-              megaPokemon
-            );
-
-
-          currentMegaStone =
-            megaOption
-              ? megaOption.stone
-              : "";
-
-        } else {
-
-          currentMegaEnabled =
-            false;
-        }
-      }
-    }
-
-
-    const shuffled =
-      shuffleArray(pool);
-
-
-    for (let i = 0; i < 6; i++) {
-
-      if (nextTeam[i]) {
         continue;
       }
 
 
-      let foundIndex = -1;
-
-
-      for (
-        let j = 0;
-        j < shuffled.length;
-        j++
-      ) {
-
-        const pokemon =
-          shuffled[j];
-
-
-        if (
-          hasSameSpecies(
-            nextTeam,
-            pokemon
-          )
-        ) {
-          continue;
-        }
-
-
-        foundIndex = j;
-        break;
-      }
-
-
-      if (foundIndex < 0) {
-        return false;
-      }
-
-
-      nextTeam[i] =
-        shuffled.splice(
-          foundIndex,
-          1
-        )[0];
+      foundIndex = j;
+      break;
     }
 
 
-    currentTeam =
-      nextTeam;
+    if (
+      foundIndex < 0
+    ) {
+      return false;
+    }
 
-    return true;
+
+    nextTeam[i] =
+      shuffled.splice(
+        foundIndex,
+        1
+      )[0];
   }
 
 
-  function rebuildItemsWithLocks() {
+  currentTeam =
+    nextTeam;
 
-    const itemPool =
-      getItemPool();
-
-    const nextItems =
-      Array(6).fill("");
-
-    const usedItems =
-      new Set();
+  return true;
+}
 
 
-    for (let i = 0; i < 6; i++) {
+function rebuildItemsWithLocks() {
 
-      if (
-        lockedSlots[i] &&
+  const itemPool =
+    getItemPool();
+
+  const nextItems =
+    Array(6).fill("");
+
+  const usedItems =
+    new Set();
+
+
+  for (
+    let i = 0;
+    i < 6;
+    i++
+  ) {
+
+    if (
+      lockedSlots[i] &&
+      currentItems[i]
+    ) {
+
+      nextItems[i] =
+        currentItems[i];
+
+      usedItems.add(
         currentItems[i]
-      ) {
+      );
+    }
+  }
 
-        nextItems[i] =
-          currentItems[i];
 
-        usedItems.add(
-          currentItems[i]
-        );
-      }
+  if (
+    isChampions() &&
+    currentMegaEnabled &&
+    currentMegaIndex >= 0 &&
+    !lockedSlots[
+      currentMegaIndex
+    ]
+  ) {
+
+    nextItems[
+      currentMegaIndex
+    ] =
+      currentMegaStone;
+
+    if (currentMegaStone) {
+
+      usedItems.add(
+        currentMegaStone
+      );
+    }
+  }
+
+
+  const availableItems =
+    shuffleArray(
+      itemPool.filter(
+        item =>
+          !usedItems.has(
+            item
+          )
+      )
+    );
+
+
+  for (
+    let i = 0;
+    i < 6;
+    i++
+  ) {
+
+    if (
+      lockedSlots[i]
+    ) {
+      continue;
     }
 
 
     if (
       isChampions() &&
       currentMegaEnabled &&
-      currentMegaIndex >= 0 &&
-      !lockedSlots[
+      i ===
         currentMegaIndex
-      ]
     ) {
-
-      nextItems[
-        currentMegaIndex
-      ] =
-        currentMegaStone;
-
-      if (currentMegaStone) {
-        usedItems.add(
-          currentMegaStone
-        );
-      }
+      continue;
     }
 
 
-    const availableItems =
-      shuffleArray(
-        itemPool.filter(
-          item =>
-            !usedItems.has(
-              item
-            )
-        )
-      );
+    const nextItem =
+      availableItems.shift();
 
 
-    for (let i = 0; i < 6; i++) {
-
-      if (lockedSlots[i]) {
-        continue;
-      }
-
-
-      if (
-        isChampions() &&
-        currentMegaEnabled &&
-        i ===
-          currentMegaIndex
-      ) {
-        continue;
-      }
-
-
-      const nextItem =
-        availableItems.shift();
-
-
-      if (!nextItem) {
-        return false;
-      }
-
-
-      nextItems[i] =
-        nextItem;
-    }
-
-
-    currentItems =
-      nextItems;
-
-    return true;
-  }
-
-
-  function rebuildNaturesWithLocks() {
-
-    const nextNatures =
-      Array(6).fill("");
-
-
-    for (let i = 0; i < 6; i++) {
-
-      if (lockedSlots[i]) {
-
-        nextNatures[i] =
-          currentNatures[i];
-
-      } else {
-
-        nextNatures[i] =
-          getRandomNature();
-      }
-    }
-
-
-    currentNatures =
-      nextNatures;
-  }
-
-
-  function rebuildUnlockedSlots() {
-
-    let success = false;
-
-
-    if (isSV()) {
-
-      success =
-        buildSVTeamWithLocks();
-
-    } else {
-
-      success =
-        buildChampionsTeamWithLocks();
-    }
-
-
-    if (!success) {
+    if (!nextItem) {
       return false;
     }
 
 
-    if (
-      !rebuildItemsWithLocks()
-    ) {
-      return false;
-    }
-
-
-    rebuildNaturesWithLocks();
-
-    return true;
+    nextItems[i] =
+      nextItem;
   }
 
 
-  function updateDrawButtonLabel() {
+  currentItems =
+    nextItems;
 
-    const button =
-      document.getElementById(
-        "drawButton"
-      );
+  return true;
+}
 
+
+function rebuildNaturesWithLocks() {
+
+  const nextNatures =
+    Array(6).fill("");
+
+
+  for (
+    let i = 0;
+    i < 6;
+    i++
+  ) {
 
     if (
-      currentTeam.length !== 6
+      lockedSlots[i]
     ) {
 
-      button.textContent =
-        "🎲 6匹を抽選する";
-
-      return;
-    }
-
-
-    const lockedCount =
-      lockedSlots.filter(
-        Boolean
-      ).length;
-
-
-    if (lockedCount > 0) {
-
-      button.textContent =
-        `🎲 ロック以外を再抽選（${lockedCount}匹固定）`;
+      nextNatures[i] =
+        currentNatures[i];
 
     } else {
 
-      button.textContent =
-        "🎲 もう一度6匹を抽選する";
+      nextNatures[i] =
+        getRandomNature();
     }
   }
 
 
-  async function toggleLock(index) {
+  currentNatures =
+    nextNatures;
+}
 
-    if (
-      currentTeam.length !== 6
-    ) {
-      return;
+
+function rebuildUnlockedSlots() {
+
+  let success = false;
+
+
+  if (isSV()) {
+
+    success =
+      buildSVTeamWithLocks();
+
+  } else {
+
+    success =
+      buildChampionsTeamWithLocks();
+  }
+
+
+  if (!success) {
+    return false;
+  }
+
+
+  if (
+    !rebuildItemsWithLocks()
+  ) {
+    return false;
+  }
+
+
+  rebuildNaturesWithLocks();
+
+  return true;
+}
+
+
+function updateDrawButtonLabel() {
+
+  const button =
+    document.getElementById(
+      "drawButton"
+    );
+
+
+  if (
+    currentTeam.length !== 6
+  ) {
+
+    button.textContent =
+      "🎲 6匹を抽選する";
+
+    return;
+  }
+
+
+  const lockedCount =
+    lockedSlots.filter(
+      Boolean
+    ).length;
+
+
+  if (
+    lockedCount > 0
+  ) {
+
+    button.textContent =
+      `🎲 ロック以外を再抽選（${lockedCount}匹固定）`;
+
+  } else {
+
+    button.textContent =
+      "🎲 もう一度6匹を抽選する";
+  }
+}
+
+
+async function toggleLock(
+  index
+) {
+
+  if (
+    currentTeam.length !== 6
+  ) {
+    return;
+  }
+
+
+  lockedSlots[index] =
+    !lockedSlots[index];
+
+
+  await renderSlot(index);
+
+  updateDrawButtonLabel();
+
+
+  document.getElementById(
+    "message"
+  ).textContent =
+    lockedSlots[index]
+      ? `${currentTeam[index]}を固定しました。`
+      : `${currentTeam[index]}の固定を解除しました。`;
+}
+
+
+async function renderSlot(
+  index
+) {
+
+  const slots =
+    document.querySelectorAll(
+      ".pokemon"
+    );
+
+  const slot =
+    slots[index];
+
+  const pokemonName =
+    currentTeam[index];
+
+  const itemName =
+    currentItems[index];
+
+  const natureName =
+    currentNatures[index];
+
+
+  const isMega =
+    isChampions() &&
+    currentMegaEnabled &&
+    index ===
+      currentMegaIndex;
+
+
+  const isLocked =
+    lockedSlots[index];
+
+
+  slot.classList.remove(
+    "empty",
+    "mega",
+    "locked"
+  );
+
+
+  if (isMega) {
+    slot.classList.add(
+      "mega"
+    );
+  }
+
+
+  if (isLocked) {
+    slot.classList.add(
+      "locked"
+    );
+  }
+
+
+  const imageUrl =
+    await getPokemonImage(
+      pokemonName
+    );
+
+
+  currentImageUrls[index] =
+    imageUrl || "";
+
+
+  const megaLabel =
+    isMega
+      ? `<div class="mega-label">⭐ メガ枠</div>`
+      : "";
+
+
+  const lockLabel =
+    isLocked
+      ? `<div class="lock-label">🔒 固定中</div>`
+      : "";
+
+
+  slot.innerHTML = `
+    ${
+      imageUrl
+        ? `<img src="${imageUrl}" alt="${pokemonName}">`
+        : ""
     }
 
+    ${megaLabel}
+    ${lockLabel}
 
-    lockedSlots[index] =
-      !lockedSlots[index];
+    <div class="pokemon-name">
+      ${pokemonName}
+    </div>
+
+    <div class="pokemon-item">
+      持ち物：${itemName}
+    </div>
+
+    <div class="pokemon-nature">
+      性格：${natureName}
+    </div>
+
+    <div class="slot-buttons">
+
+      <button
+        class="lock-button ${isLocked ? "active" : ""}"
+        onclick="toggleLock(${index})">
+        ${
+          isLocked
+            ? "🔓 固定を解除"
+            : "🔒 このポケモンを固定"
+        }
+      </button>
+
+      <button
+        class="reroll-button"
+        onclick="rerollPokemon(${index})"
+        ${isLocked ? "disabled" : ""}>
+        🔄 この1匹だけ引き直す
+      </button>
+
+      <button
+        class="item-button"
+        onclick="rerollItem(${index})"
+        ${
+          isLocked || isMega
+            ? "disabled"
+            : ""
+        }>
+        🎒 持ち物だけ引き直す
+      </button>
+
+      <button
+        class="nature-button"
+        onclick="rerollNature(${index})"
+        ${isLocked ? "disabled" : ""}>
+        🧠 性格だけ引き直す
+      </button>
+
+    </div>
+  `;
+}
 
 
-    await renderSlot(index);
+async function renderAllSlots() {
 
-    updateDrawButtonLabel();
+  await Promise.all(
+    currentTeam.map(
+      (_, index) =>
+        renderSlot(index)
+    )
+  );
+}
 
+
+function setDrawCompleteMessage() {
+
+  if (isSVRegJ()) {
+
+    const specialCount =
+      countSpecialPokemon(
+        currentTeam
+      );
 
     document.getElementById(
       "message"
     ).textContent =
-      lockedSlots[index]
-        ? `${currentTeam[index]}を固定しました。`
-        : `${currentTeam[index]}の固定を解除しました。`;
+      `抽選完了！特別なポケモンは${specialCount}匹です。`;
+
+    return;
   }
 
 
-  async function renderSlot(index) {
+  if (isSV()) {
 
-    const slots =
-      document.querySelectorAll(
-        ".pokemon"
+    document.getElementById(
+      "message"
+    ).textContent =
+      "抽選完了！";
+
+    return;
+  }
+
+
+  if (
+    currentMegaEnabled &&
+    currentMegaIndex >= 0
+  ) {
+
+    document.getElementById(
+      "message"
+    ).textContent =
+      `抽選完了！今回は${currentTeam[currentMegaIndex]}がメガ枠です。`;
+
+  } else {
+
+    document.getElementById(
+      "message"
+    ).textContent =
+      "抽選完了！今回はメガ枠なしです。";
+  }
+}
+
+
+async function drawPokemon() {
+
+  const pool =
+    getPokemonPool();
+
+  const itemPool =
+    getItemPool();
+
+
+  if (
+    pool.length < 6 ||
+    itemPool.length < 6
+  ) {
+
+    document.getElementById(
+      "message"
+    ).textContent =
+      "このルールのデータはまだ登録されていません。";
+
+    return;
+  }
+
+
+  const hasCurrentTeam =
+    currentTeam.length === 6;
+
+
+  const lockedCount =
+    lockedSlots.filter(
+      Boolean
+    ).length;
+
+
+  if (
+    hasCurrentTeam &&
+    lockedCount === 6
+  ) {
+
+    document.getElementById(
+      "message"
+    ).textContent =
+      "6匹すべて固定されています。固定を解除してから再抽選してください。";
+
+    return;
+  }
+
+
+  hideOldPreview();
+
+
+  if (
+    hasCurrentTeam &&
+    lockedCount > 0
+  ) {
+
+    const success =
+      rebuildUnlockedSlots();
+
+
+    if (!success) {
+
+      document.getElementById(
+        "message"
+      ).textContent =
+        "再抽選できませんでした。データを確認してください。";
+
+      return;
+    }
+
+
+    currentImageUrls =
+      Array(6).fill("");
+
+
+    await renderAllSlots();
+
+    updateDrawButtonLabel();
+
+    setDrawCompleteMessage();
+
+    return;
+  }
+
+
+  lockedSlots =
+    Array(6).fill(false);
+
+
+  buildTeam();
+
+
+  if (
+    currentTeam.length < 6
+  ) {
+
+    document.getElementById(
+      "message"
+    ).textContent =
+      "6匹を抽選できませんでした。データを確認してください。";
+
+    return;
+  }
+
+
+  currentNatures = [];
+  currentImageUrls = [];
+
+
+  for (
+    let i = 0;
+    i < 6;
+    i++
+  ) {
+
+    currentNatures.push(
+      getRandomNature()
+    );
+  }
+
+
+  await renderAllSlots();
+
+
+  document.getElementById(
+    "imageButton"
+  ).style.display =
+    "block";
+
+
+  document.getElementById(
+    "shareButton"
+  ).style.display =
+    "block";
+
+
+  document.getElementById(
+    "askButton"
+  ).style.display =
+    "block";
+
+
+  updateDrawButtonLabel();
+
+  setDrawCompleteMessage();
+}
+
+
+function getAvailableNormalItem(
+  index
+) {
+
+  const itemPool =
+    getItemPool();
+
+
+  const usedItems =
+    currentItems.filter(
+      (_, i) =>
+        i !== index
+    );
+
+
+  const currentItem =
+    currentItems[index];
+
+
+  const availableItems =
+    itemPool.filter(
+      item =>
+        item !== currentItem &&
+        !usedItems.includes(
+          item
+        )
+    );
+
+
+  if (
+    availableItems.length === 0
+  ) {
+    return "";
+  }
+
+
+  return availableItems[
+    Math.floor(
+      Math.random() *
+      availableItems.length
+    )
+  ];
+}
+
+
+function getAvailablePokemon(
+  index
+) {
+
+  const pool =
+    getPokemonPool();
+
+
+  const otherPokemon =
+    currentTeam.filter(
+      (_, i) =>
+        i !== index
+    );
+
+
+  return pool.filter(
+    pokemon => {
+
+      if (
+        pokemon ===
+        currentTeam[index]
+      ) {
+        return false;
+      }
+
+
+      if (
+        hasSameSpecies(
+          otherPokemon,
+          pokemon
+        )
+      ) {
+        return false;
+      }
+
+
+      if (isSVRegJ()) {
+
+        const otherSpecialCount =
+          countSpecialPokemon(
+            otherPokemon
+          );
+
+
+        if (
+          otherSpecialCount >= 2 &&
+          isSVJSpecialPokemon(
+            pokemon
+          )
+        ) {
+          return false;
+        }
+      }
+
+
+      return true;
+    }
+  );
+}
+
+
+function getAvailableMegaPokemon(
+  index
+) {
+
+  if (!isChampions()) {
+    return [];
+  }
+
+
+  return getAvailablePokemon(
+    index
+  ).filter(
+    pokemon =>
+      getMegaOptions(
+        pokemon,
+        rule
+      ).length > 0
+  );
+}
+
+
+async function rerollPokemon(
+  index
+) {
+
+  if (
+    currentTeam.length !== 6
+  ) {
+    return;
+  }
+
+
+  if (
+    lockedSlots[index]
+  ) {
+    return;
+  }
+
+
+  const oldPokemon =
+    currentTeam[index];
+
+
+  const isMegaSlot =
+    isChampions() &&
+    currentMegaEnabled &&
+    index ===
+      currentMegaIndex;
+
+
+  if (isMegaSlot) {
+
+    const megaPool =
+      getAvailableMegaPokemon(
+        index
       );
 
-    const slot =
-      slots[index];
 
-    const pokemonName =
-      currentTeam[index];
+    if (
+      megaPool.length === 0
+    ) {
+      return;
+    }
 
-    const itemName =
-      currentItems[index];
 
-    const natureName =
-      currentNatures[index];
+    const newPokemon =
+      megaPool[
+        Math.floor(
+          Math.random() *
+          megaPool.length
+        )
+      ];
+
+
+    const megaOption =
+      chooseMegaOption(
+        newPokemon
+      );
+
+
+    currentTeam[index] =
+      newPokemon;
+
+
+    currentMegaStone =
+      megaOption
+        ? megaOption.stone
+        : "";
+
+
+    currentItems[index] =
+      currentMegaStone;
+
+  } else {
+
+    const availablePokemon =
+      getAvailablePokemon(
+        index
+      );
+
+
+    if (
+      availablePokemon.length === 0
+    ) {
+      return;
+    }
+
+
+    currentTeam[index] =
+      availablePokemon[
+        Math.floor(
+          Math.random() *
+          availablePokemon.length
+        )
+      ];
+
+
+    currentItems[index] =
+      getAvailableNormalItem(
+        index
+      );
+  }
+
+
+  currentNatures[index] =
+    getRandomNature(
+      currentNatures[index]
+    );
+
+
+  hideOldPreview();
+
+  await renderSlot(index);
+
+
+  document.getElementById(
+    "message"
+  ).textContent =
+    `${oldPokemon}を引き直しました。`;
+}
+
+
+async function rerollItem(
+  index
+) {
+
+  if (
+    currentTeam.length !== 6 ||
+    lockedSlots[index]
+  ) {
+    return;
+  }
+
+
+  const isMegaSlot =
+    isChampions() &&
+    currentMegaEnabled &&
+    index ===
+      currentMegaIndex;
+
+
+  if (isMegaSlot) {
+
+    document.getElementById(
+      "message"
+    ).textContent =
+      "メガ枠の持ち物はメガストーン固定です。";
+
+    return;
+  }
+
+
+  const oldItem =
+    currentItems[index];
+
+
+  const newItem =
+    getAvailableNormalItem(
+      index
+    );
+
+
+  if (!newItem) {
+
+    document.getElementById(
+      "message"
+    ).textContent =
+      "変更できる持ち物がありません。";
+
+    return;
+  }
+
+
+  currentItems[index] =
+    newItem;
+
+
+  hideOldPreview();
+
+  await renderSlot(index);
+
+
+  document.getElementById(
+    "message"
+  ).textContent =
+    `${currentTeam[index]}の持ち物を「${oldItem}」から「${newItem}」に変更しました。`;
+}
+
+
+async function rerollNature(
+  index
+) {
+
+  if (
+    currentTeam.length !== 6 ||
+    lockedSlots[index]
+  ) {
+    return;
+  }
+
+
+  const oldNature =
+    currentNatures[index];
+
+
+  const newNature =
+    getRandomNature(
+      oldNature
+    );
+
+
+  currentNatures[index] =
+    newNature;
+
+
+  hideOldPreview();
+
+  await renderSlot(index);
+
+
+  document.getElementById(
+    "message"
+  ).textContent =
+    `${currentTeam[index]}の性格を「${oldNature}」から「${newNature}」に変更しました。`;
+}
+
+
+function loadImageForCanvas(
+  src
+) {
+
+  return new Promise(
+    resolve => {
+
+      if (!src) {
+        resolve(null);
+        return;
+      }
+
+
+      const img =
+        new Image();
+
+
+      img.crossOrigin =
+        "anonymous";
+
+
+      img.onload =
+        () => resolve(img);
+
+
+      img.onerror =
+        () => resolve(null);
+
+
+      img.src = src;
+    }
+  );
+}
+
+
+function drawRoundedRect(
+  ctx,
+  x,
+  y,
+  width,
+  height,
+  radius,
+  fillStyle
+) {
+
+  ctx.beginPath();
+
+  ctx.roundRect(
+    x,
+    y,
+    width,
+    height,
+    radius
+  );
+
+  ctx.fillStyle =
+    fillStyle;
+
+  ctx.fill();
+
+  ctx.closePath();
+}
+
+
+async function createShareImage() {
+
+  if (
+    currentTeam.length !== 6
+  ) {
+    return;
+  }
+
+
+  document.getElementById(
+    "message"
+  ).textContent =
+    "シェア画像を作成中…";
+
+
+  currentImageUrls =
+    await Promise.all(
+      currentTeam.map(
+        name =>
+          getPokemonImage(
+            name
+          )
+      )
+    );
+
+
+  const canvas =
+    document.createElement(
+      "canvas"
+    );
+
+
+  canvas.width = 1080;
+  canvas.height = 1350;
+
+
+  const ctx =
+    canvas.getContext(
+      "2d"
+    );
+
+
+  ctx.fillStyle =
+    "#f5f6f8";
+
+
+  ctx.fillRect(
+    0,
+    0,
+    canvas.width,
+    canvas.height
+  );
+
+
+  drawRoundedRect(
+    ctx,
+    50,
+    40,
+    980,
+    1260,
+    36,
+    "#ffffff"
+  );
+
+
+  ctx.textAlign =
+    "center";
+
+
+  ctx.fillStyle =
+    "#222";
+
+
+  ctx.font =
+    "900 60px sans-serif";
+
+
+  ctx.fillText(
+    "🎲 ポケくじ",
+    540,
+    120
+  );
+
+
+  ctx.fillStyle =
+    "#666";
+
+
+  ctx.font =
+    "700 25px sans-serif";
+
+
+  ctx.fillText(
+    game,
+    540,
+    165
+  );
+
+
+  ctx.fillStyle =
+    "#777";
+
+
+  ctx.font =
+    "700 29px sans-serif";
+
+
+  ctx.fillText(
+    rule,
+    540,
+    205
+  );
+
+
+  const loadedImages =
+    await Promise.all(
+      currentImageUrls.map(
+        url =>
+          loadImageForCanvas(
+            url
+          )
+      )
+    );
+
+
+  const cardWidth = 430;
+  const cardHeight = 285;
+
+  const startX = 90;
+  const startY = 235;
+
+  const gapX = 40;
+  const gapY = 25;
+
+
+  for (
+    let i = 0;
+    i < 6;
+    i++
+  ) {
+
+    const col =
+      i % 2;
+
+
+    const row =
+      Math.floor(
+        i / 2
+      );
+
+
+    const x =
+      startX +
+      col *
+      (
+        cardWidth +
+        gapX
+      );
+
+
+    const y =
+      startY +
+      row *
+      (
+        cardHeight +
+        gapY
+      );
 
 
     const isMega =
       isChampions() &&
       currentMegaEnabled &&
-      index ===
+      i ===
         currentMegaIndex;
-
-
-    const isLocked =
-      lockedSlots[index];
-
-
-    slot.classList.remove(
-      "empty",
-      "mega",
-      "locked"
-    );
-
-
-    if (isMega) {
-      slot.classList.add(
-        "mega"
-      );
-    }
-
-
-    if (isLocked) {
-      slot.classList.add(
-        "locked"
-      );
-    }
-
-
-    const imageUrl =
-      await getPokemonImage(
-        pokemonName
-      );
-
-
-    currentImageUrls[index] =
-      imageUrl || "";
-
-
-    const megaLabel =
-      isMega
-        ? `<div class="mega-label">⭐ メガ枠</div>`
-        : "";
-
-
-    const lockLabel =
-      isLocked
-        ? `<div class="lock-label">🔒 固定中</div>`
-        : "";
-
-
-    slot.innerHTML = `
-      ${
-        imageUrl
-          ? `<img src="${imageUrl}" alt="${pokemonName}">`
-          : ""
-      }
-
-      ${megaLabel}
-      ${lockLabel}
-
-      <div class="pokemon-name">
-        ${pokemonName}
-      </div>
-
-      <div class="pokemon-item">
-        持ち物：${itemName}
-      </div>
-
-      <div class="pokemon-nature">
-        性格：${natureName}
-      </div>
-
-      <div class="slot-buttons">
-
-        <button
-          class="lock-button ${isLocked ? "active" : ""}"
-          onclick="toggleLock(${index})">
-          ${
-            isLocked
-              ? "🔓 固定を解除"
-              : "🔒 このポケモンを固定"
-          }
-        </button>
-
-        <button
-          class="reroll-button"
-          onclick="rerollPokemon(${index})"
-          ${isLocked ? "disabled" : ""}>
-          🔄 この1匹だけ引き直す
-        </button>
-
-      </div>
-    `;
-  }
-
-
-  async function renderAllSlots() {
-
-    await Promise.all(
-      currentTeam.map(
-        (_, index) =>
-          renderSlot(index)
-      )
-    );
-  }
-
-
-  function setDrawCompleteMessage() {
-
-    if (isSVRegJ()) {
-
-      const specialCount =
-        countSpecialPokemon(
-          currentTeam
-        );
-
-      document.getElementById(
-        "message"
-      ).textContent =
-        `抽選完了！特別なポケモンは${specialCount}匹です。`;
-
-      return;
-    }
-
-
-    if (isSV()) {
-
-      document.getElementById(
-        "message"
-      ).textContent =
-        "抽選完了！";
-
-      return;
-    }
-
-
-    if (
-      currentMegaEnabled &&
-      currentMegaIndex >= 0
-    ) {
-
-      document.getElementById(
-        "message"
-      ).textContent =
-        `抽選完了！今回は${currentTeam[currentMegaIndex]}がメガ枠です。`;
-
-    } else {
-
-      document.getElementById(
-        "message"
-      ).textContent =
-        "抽選完了！今回はメガ枠なしです。";
-    }
-  }
-
-
-  async function drawPokemon() {
-
-    const pool =
-      getPokemonPool();
-
-    const itemPool =
-      getItemPool();
-
-
-    if (
-      pool.length < 6 ||
-      itemPool.length < 6
-    ) {
-
-      document.getElementById(
-        "message"
-      ).textContent =
-        "このルールのデータはまだ登録されていません。";
-
-      return;
-    }
-
-
-    const hasCurrentTeam =
-      currentTeam.length === 6;
-
-
-    const lockedCount =
-      lockedSlots.filter(
-        Boolean
-      ).length;
-
-
-    if (
-      hasCurrentTeam &&
-      lockedCount === 6
-    ) {
-
-      document.getElementById(
-        "message"
-      ).textContent =
-        "6匹すべて固定されています。固定を解除してから再抽選してください。";
-
-      return;
-    }
-
-
-    hideOldPreview();
-
-
-    if (
-      hasCurrentTeam &&
-      lockedCount > 0
-    ) {
-
-      const success =
-        rebuildUnlockedSlots();
-
-
-      if (!success) {
-
-        document.getElementById(
-          "message"
-        ).textContent =
-          "再抽選できませんでした。データを確認してください。";
-
-        return;
-      }
-
-
-      currentImageUrls =
-        Array(6).fill("");
-
-
-      await renderAllSlots();
-
-      updateDrawButtonLabel();
-
-      setDrawCompleteMessage();
-
-      return;
-    }
-
-
-    lockedSlots =
-      Array(6).fill(false);
-
-
-    buildTeam();
-
-
-    if (
-      currentTeam.length < 6
-    ) {
-
-      document.getElementById(
-        "message"
-      ).textContent =
-        "6匹を抽選できませんでした。データを確認してください。";
-
-      return;
-    }
-
-
-    currentNatures = [];
-    currentImageUrls = [];
-
-
-    for (
-      let i = 0;
-      i < 6;
-      i++
-    ) {
-
-      currentNatures.push(
-        getRandomNature()
-      );
-    }
-
-
-    await renderAllSlots();
-
-
-    document.getElementById(
-      "imageButton"
-    ).style.display =
-      "block";
-
-
-    document.getElementById(
-      "shareButton"
-    ).style.display =
-      "block";
-
-
-    document.getElementById(
-      "askButton"
-    ).style.display =
-      "block";
-
-
-    updateDrawButtonLabel();
-
-    setDrawCompleteMessage();
-  }
-
-
-  function getAvailableNormalItem(index) {
-
-    const itemPool =
-      getItemPool();
-
-
-    const usedItems =
-      currentItems.filter(
-        (_, i) =>
-          i !== index
-      );
-
-
-    const availableItems =
-      itemPool.filter(
-        item =>
-          !usedItems.includes(
-            item
-          )
-      );
-
-
-    if (
-      availableItems.length === 0
-    ) {
-      return "";
-    }
-
-
-    return availableItems[
-      Math.floor(
-        Math.random() *
-        availableItems.length
-      )
-    ];
-  }
-
-
-  function getAvailablePokemon(index) {
-
-    const pool =
-      getPokemonPool();
-
-
-    const otherPokemon =
-      currentTeam.filter(
-        (_, i) =>
-          i !== index
-      );
-
-
-    return pool.filter(
-      pokemon => {
-
-        if (
-          pokemon ===
-          currentTeam[index]
-        ) {
-          return false;
-        }
-
-
-        if (
-          hasSameSpecies(
-            otherPokemon,
-            pokemon
-          )
-        ) {
-          return false;
-        }
-
-
-        if (isSVRegJ()) {
-
-          const otherSpecialCount =
-            countSpecialPokemon(
-              otherPokemon
-            );
-
-
-          if (
-            otherSpecialCount >= 2 &&
-            isSVJSpecialPokemon(
-              pokemon
-            )
-          ) {
-            return false;
-          }
-        }
-
-
-        return true;
-      }
-    );
-  }
-
-
-  function getAvailableMegaPokemon(index) {
-
-    if (!isChampions()) {
-      return [];
-    }
-
-
-    return getAvailablePokemon(
-      index
-    ).filter(
-      pokemon =>
-        getMegaOptions(
-          pokemon,
-          rule
-        ).length > 0
-    );
-  }
-
-
-  async function rerollPokemon(index) {
-
-    if (
-      currentTeam.length !== 6
-    ) {
-      return;
-    }
-
-
-    if (lockedSlots[index]) {
-
-      document.getElementById(
-        "message"
-      ).textContent =
-        `${currentTeam[index]}は固定されています。`;
-
-      return;
-    }
-
-
-    const oldPokemon =
-      currentTeam[index];
-
-
-    const isMegaSlot =
-      isChampions() &&
-      currentMegaEnabled &&
-      index ===
-        currentMegaIndex;
-
-
-    if (isMegaSlot) {
-
-      const megaPool =
-        getAvailableMegaPokemon(
-          index
-        );
-
-
-      if (
-        megaPool.length === 0
-      ) {
-        return;
-      }
-
-
-      const newPokemon =
-        megaPool[
-          Math.floor(
-            Math.random() *
-            megaPool.length
-          )
-        ];
-
-
-      const megaOption =
-        chooseMegaOption(
-          newPokemon
-        );
-
-
-      currentTeam[index] =
-        newPokemon;
-
-
-      currentMegaStone =
-        megaOption
-          ? megaOption.stone
-          : "";
-
-
-      currentItems[index] =
-        currentMegaStone;
-
-    } else {
-
-      const availablePokemon =
-        getAvailablePokemon(
-          index
-        );
-
-
-      if (
-        availablePokemon.length === 0
-      ) {
-        return;
-      }
-
-
-      currentTeam[index] =
-        availablePokemon[
-          Math.floor(
-            Math.random() *
-            availablePokemon.length
-          )
-        ];
-
-
-      currentItems[index] =
-        getAvailableNormalItem(
-          index
-        );
-    }
-
-
-    currentNatures[index] =
-      getRandomNature();
-
-
-    hideOldPreview();
-
-    await renderSlot(index);
-
-
-    document.getElementById(
-      "message"
-    ).textContent =
-      `${oldPokemon}を引き直しました。`;
-  }
-
-
-  function loadImageForCanvas(src) {
-
-    return new Promise(
-      resolve => {
-
-        if (!src) {
-          resolve(null);
-          return;
-        }
-
-
-        const img =
-          new Image();
-
-
-        img.crossOrigin =
-          "anonymous";
-
-
-        img.onload =
-          () => resolve(img);
-
-
-        img.onerror =
-          () => resolve(null);
-
-
-        img.src = src;
-      }
-    );
-  }
-
-
-  function drawRoundedRect(
-    ctx,
-    x,
-    y,
-    width,
-    height,
-    radius,
-    fillStyle
-  ) {
-
-    ctx.beginPath();
-
-    ctx.roundRect(
-      x,
-      y,
-      width,
-      height,
-      radius
-    );
-
-    ctx.fillStyle =
-      fillStyle;
-
-    ctx.fill();
-
-    ctx.closePath();
-  }
-
-
-  async function createShareImage() {
-
-    if (
-      currentTeam.length !== 6
-    ) {
-      return;
-    }
-
-
-    document.getElementById(
-      "message"
-    ).textContent =
-      "シェア画像を作成中…";
-
-
-    currentImageUrls =
-      await Promise.all(
-        currentTeam.map(
-          name =>
-            getPokemonImage(
-              name
-            )
-        )
-      );
-
-
-    const canvas =
-      document.createElement(
-        "canvas"
-      );
-
-
-    canvas.width = 1080;
-    canvas.height = 1350;
-
-
-    const ctx =
-      canvas.getContext(
-        "2d"
-      );
-
-
-    ctx.fillStyle =
-      "#f5f6f8";
-
-
-    ctx.fillRect(
-      0,
-      0,
-      canvas.width,
-      canvas.height
-    );
 
 
     drawRoundedRect(
       ctx,
-      50,
-      40,
-      980,
-      1260,
-      36,
-      "#ffffff"
+      x,
+      y,
+      cardWidth,
+      cardHeight,
+      28,
+      isMega
+        ? "#fff7e6"
+        : "#f3f4f6"
     );
 
 
-    ctx.textAlign =
-      "center";
-
-
-    ctx.fillStyle =
-      "#222";
-
-
-    ctx.font =
-      "900 60px sans-serif";
-
-
-    ctx.fillText(
-      "🎲 ポケくじ",
-      540,
-      120
-    );
-
-
-    ctx.fillStyle =
-      "#666";
-
-
-    ctx.font =
-      "700 25px sans-serif";
-
-
-    ctx.fillText(
-      game,
-      540,
-      165
-    );
-
-
-    ctx.fillStyle =
-      "#777";
-
-
-    ctx.font =
-      "700 29px sans-serif";
-
-
-    ctx.fillText(
-      rule,
-      540,
-      205
-    );
-
-
-    const loadedImages =
-      await Promise.all(
-        currentImageUrls.map(
-          url =>
-            loadImageForCanvas(
-              url
-            )
-        )
-      );
-
-
-    const cardWidth = 430;
-    const cardHeight = 285;
-
-    const startX = 90;
-    const startY = 235;
-
-    const gapX = 40;
-    const gapY = 25;
-
-
-    for (
-      let i = 0;
-      i < 6;
-      i++
-    ) {
-
-      const col =
-        i % 2;
-
-
-      const row =
-        Math.floor(
-          i / 2
-        );
-
-
-      const x =
-        startX +
-        col *
-        (
-          cardWidth +
-          gapX
-        );
-
-
-      const y =
-        startY +
-        row *
-        (
-          cardHeight +
-          gapY
-        );
-
-
-      const isMega =
-        isChampions() &&
-        currentMegaEnabled &&
-        i ===
-          currentMegaIndex;
-
-
-      drawRoundedRect(
-        ctx,
-        x,
-        y,
-        cardWidth,
-        cardHeight,
-        28,
-        isMega
-          ? "#fff7e6"
-          : "#f3f4f6"
-      );
-
-
-      if (isMega) {
-
-        ctx.fillStyle =
-          "#b87300";
-
-
-        ctx.font =
-          "900 20px sans-serif";
-
-
-        ctx.textAlign =
-          "center";
-
-
-        ctx.fillText(
-          "⭐ メガ枠",
-          x +
-          cardWidth / 2,
-          y + 27
-        );
-      }
-
-
-      const img =
-        loadedImages[i];
-
-
-      if (img) {
-
-        const imageSize =
-          120;
-
-
-        ctx.drawImage(
-          img,
-          x +
-          (
-            cardWidth -
-            imageSize
-          ) / 2,
-          y + 30,
-          imageSize,
-          imageSize
-        );
-      }
-
+    if (isMega) {
 
       ctx.fillStyle =
-        "#222";
+        "#b87300";
 
 
       ctx.font =
-        "800 27px sans-serif";
+        "900 20px sans-serif";
 
 
       ctx.textAlign =
@@ -2223,53 +2418,44 @@
 
 
       ctx.fillText(
-        currentTeam[i],
+        "⭐ メガ枠",
         x +
         cardWidth / 2,
-        y + 175,
-        cardWidth - 30
+        y + 27
       );
+    }
 
 
-      ctx.fillStyle =
-        isMega
-          ? "#9a6500"
-          : "#666";
+    const img =
+      loadedImages[i];
 
 
-      ctx.font =
-        "600 21px sans-serif";
+    if (img) {
+
+      const imageSize =
+        120;
 
 
-      ctx.fillText(
-        `持ち物：${currentItems[i]}`,
+      ctx.drawImage(
+        img,
         x +
-        cardWidth / 2,
-        y + 218,
-        cardWidth - 30
-      );
-
-
-      ctx.fillStyle =
-        "#666";
-
-
-      ctx.fillText(
-        `性格：${currentNatures[i]}`,
-        x +
-        cardWidth / 2,
-        y + 252,
-        cardWidth - 30
+        (
+          cardWidth -
+          imageSize
+        ) / 2,
+        y + 30,
+        imageSize,
+        imageSize
       );
     }
 
 
     ctx.fillStyle =
-      "#888";
+      "#222";
 
 
     ctx.font =
-      "600 23px sans-serif";
+      "800 27px sans-serif";
 
 
     ctx.textAlign =
@@ -2277,126 +2463,180 @@
 
 
     ctx.fillText(
-      `#ポケくじ  ${getGameHashtag()}`,
-      540,
-      1225
+      currentTeam[i],
+      x +
+      cardWidth / 2,
+      y + 175,
+      cardWidth - 30
     );
 
 
-    const blob =
-      await new Promise(
-        resolve => {
-
-          canvas.toBlob(
-            resolve,
-            "image/png",
-            1
-          );
-        }
-      );
+    ctx.fillStyle =
+      isMega
+        ? "#9a6500"
+        : "#666";
 
 
-    if (!blob) {
-
-      document.getElementById(
-        "message"
-      ).textContent =
-        "シェア画像を作成できませんでした。";
-
-      return;
-    }
+    ctx.font =
+      "600 21px sans-serif";
 
 
-    shareImageBlob =
-      blob;
-
-
-    if (
-      previewObjectUrl
-    ) {
-
-      URL.revokeObjectURL(
-        previewObjectUrl
-      );
-    }
-
-
-    previewObjectUrl =
-      URL.createObjectURL(
-        blob
-      );
-
-
-    document.getElementById(
-      "sharePreviewImage"
-    ).src =
-      previewObjectUrl;
-
-
-    document.getElementById(
-      "sharePreview"
-    ).classList.add(
-      "show"
+    ctx.fillText(
+      `持ち物：${currentItems[i]}`,
+      x +
+      cardWidth / 2,
+      y + 218,
+      cardWidth - 30
     );
 
+
+    ctx.fillStyle =
+      "#666";
+
+
+    ctx.fillText(
+      `性格：${currentNatures[i]}`,
+      x +
+      cardWidth / 2,
+      y + 252,
+      cardWidth - 30
+    );
+  }
+
+
+  ctx.fillStyle =
+    "#888";
+
+
+  ctx.font =
+    "600 23px sans-serif";
+
+
+  ctx.textAlign =
+    "center";
+
+
+  ctx.fillText(
+    `#ポケくじ  ${getGameHashtag()}`,
+    540,
+    1225
+  );
+
+
+  const blob =
+    await new Promise(
+      resolve => {
+
+        canvas.toBlob(
+          resolve,
+          "image/png",
+          1
+        );
+      }
+    );
+
+
+  if (!blob) {
 
     document.getElementById(
       "message"
     ).textContent =
-      "シェア画像を作成しました！";
+      "シェア画像を作成できませんでした。";
+
+    return;
   }
 
 
-  function hideOldPreview() {
+  shareImageBlob =
+    blob;
 
-    document.getElementById(
-      "sharePreview"
-    ).classList.remove(
-      "show"
+
+  if (
+    previewObjectUrl
+  ) {
+
+    URL.revokeObjectURL(
+      previewObjectUrl
+    );
+  }
+
+
+  previewObjectUrl =
+    URL.createObjectURL(
+      blob
     );
 
 
-    shareImageBlob =
-      null;
+  document.getElementById(
+    "sharePreviewImage"
+  ).src =
+    previewObjectUrl;
+
+
+  document.getElementById(
+    "sharePreview"
+  ).classList.add(
+    "show"
+  );
+
+
+  document.getElementById(
+    "message"
+  ).textContent =
+    "シェア画像を作成しました！";
+}
+
+
+function hideOldPreview() {
+
+  document.getElementById(
+    "sharePreview"
+  ).classList.remove(
+    "show"
+  );
+
+
+  shareImageBlob =
+    null;
+}
+
+
+async function shareResult() {
+
+  if (
+    currentTeam.length !== 6
+  ) {
+    return;
   }
 
 
-  async function shareResult() {
-
-    if (
-      currentTeam.length !== 6
-    ) {
-      return;
-    }
+  if (!shareImageBlob) {
+    await createShareImage();
+  }
 
 
-    if (!shareImageBlob) {
-      await createShareImage();
-    }
+  if (!shareImageBlob) {
+    return;
+  }
 
 
-    if (!shareImageBlob) {
-      return;
-    }
+  const teamText =
+    currentTeam.join(
+      " / "
+    );
 
 
-    const teamText =
-      currentTeam.join(
-        " / "
-      );
+  const megaText =
+    isChampions() &&
+    currentMegaEnabled &&
+    currentMegaIndex >= 0
+
+      ? `\n⭐ メガ枠：${currentTeam[currentMegaIndex]}（${currentMegaStone}）\n`
+
+      : "";
 
 
-    const megaText =
-      isChampions() &&
-      currentMegaEnabled &&
-      currentMegaIndex >= 0
-
-        ? `\n⭐ メガ枠：${currentTeam[currentMegaIndex]}（${currentMegaStone}）\n`
-
-        : "";
-
-
-    const shareText =
+  const shareText =
 `🎲 ポケくじでランダム構築！
 
 ${game}
@@ -2407,129 +2647,129 @@ ${megaText}
 #ポケくじ ${getGameHashtag()}`;
 
 
-    const shareUrl =
-      "https://nico25dayo.github.io/poke-kuji/";
+  const shareUrl =
+    "https://nico25dayo.github.io/poke-kuji/";
 
 
-    const file =
-      new File(
-        [shareImageBlob],
-        "poke-kuji-result.png",
-        {
-          type:
-            "image/png"
-        }
-      );
+  const file =
+    new File(
+      [shareImageBlob],
+      "poke-kuji-result.png",
+      {
+        type:
+          "image/png"
+      }
+    );
 
 
-    const canShareFile =
-      navigator.canShare &&
-      navigator.canShare({
-        files: [file]
+  const canShareFile =
+    navigator.canShare &&
+    navigator.canShare({
+      files: [file]
+    });
+
+
+  if (
+    navigator.share &&
+    canShareFile
+  ) {
+
+    try {
+
+      await navigator.share({
+        title:
+          "ポケくじ",
+
+        text:
+          shareText,
+
+        url:
+          shareUrl,
+
+        files:
+          [file]
       });
 
+    } catch (error) {
 
-    if (
-      navigator.share &&
-      canShareFile
-    ) {
-
-      try {
-
-        await navigator.share({
-          title:
-            "ポケくじ",
-
-          text:
-            shareText,
-
-          url:
-            shareUrl,
-
-          files:
-            [file]
-        });
-
-      } catch (error) {
-
-        console.log(
-          "共有をキャンセルしました。"
-        );
-      }
-
-      return;
-    }
-
-
-    if (
-      navigator.share
-    ) {
-
-      try {
-
-        await navigator.share({
-          title:
-            "ポケくじ",
-
-          text:
-            shareText,
-
-          url:
-            shareUrl
-        });
-
-      } catch (error) {
-
-        console.log(
-          "共有をキャンセルしました。"
-        );
-      }
-
-      return;
-    }
-
-
-    await navigator.clipboard
-      .writeText(
-        shareText +
-        "\n" +
-        shareUrl
+      console.log(
+        "共有をキャンセルしました。"
       );
+    }
 
-
-    document.getElementById(
-      "message"
-    ).textContent =
-      "共有文をコピーしました！";
+    return;
   }
 
 
-  function askOnX() {
+  if (
+    navigator.share
+  ) {
 
-    if (
-      currentTeam.length !== 6
-    ) {
-      return;
+    try {
+
+      await navigator.share({
+        title:
+          "ポケくじ",
+
+        text:
+          shareText,
+
+        url:
+          shareUrl
+      });
+
+    } catch (error) {
+
+      console.log(
+        "共有をキャンセルしました。"
+      );
     }
 
-
-    const teamText =
-      currentTeam.join(
-        " / "
-      );
+    return;
+  }
 
 
-    const megaText =
-      isChampions() &&
-      currentMegaEnabled &&
-      currentMegaIndex >= 0
-
-        ? `\n⭐ メガ枠：${currentTeam[currentMegaIndex]}（${currentMegaStone}）\n`
-
-        : "";
+  await navigator.clipboard
+    .writeText(
+      shareText +
+      "\n" +
+      shareUrl
+    );
 
 
-    const text =
+  document.getElementById(
+    "message"
+  ).textContent =
+    "共有文をコピーしました！";
+}
+
+
+function askOnX() {
+
+  if (
+    currentTeam.length !== 6
+  ) {
+    return;
+  }
+
+
+  const teamText =
+    currentTeam.join(
+      " / "
+    );
+
+
+  const megaText =
+    isChampions() &&
+    currentMegaEnabled &&
+    currentMegaIndex >= 0
+
+      ? `\n⭐ メガ枠：${currentTeam[currentMegaIndex]}（${currentMegaStone}）\n`
+
+      : "";
+
+
+  const text =
 `🎲 ポケくじでこの6匹が出ました！
 
 ${game}
@@ -2542,99 +2782,99 @@ ${megaText}
 #ポケくじ ${getGameHashtag()}`;
 
 
-    const siteUrl =
-      "https://nico25dayo.github.io/poke-kuji/";
+  const siteUrl =
+    "https://nico25dayo.github.io/poke-kuji/";
 
 
-    const xUrl =
-      "https://twitter.com/intent/tweet?text=" +
-      encodeURIComponent(
-        text
-      ) +
-      "&url=" +
-      encodeURIComponent(
-        siteUrl
-      );
-
-
-    window.open(
-      xUrl,
-      "_blank"
-    );
-  }
-
-
-  function resetDraw() {
-
-    currentTeam = [];
-    currentItems = [];
-    currentNatures = [];
-    currentImageUrls = [];
-
-    lockedSlots =
-      Array(6).fill(false);
-
-    currentMegaEnabled = false;
-    currentMegaIndex = -1;
-    currentMegaStone = "";
-
-    shareImageBlob = null;
-
-
-    const slots =
-      document.querySelectorAll(
-        ".pokemon"
-      );
-
-
-    slots.forEach(
-      slot => {
-
-        slot.textContent =
-          "？";
-
-
-        slot.classList.add(
-          "empty"
-        );
-
-
-        slot.classList.remove(
-          "mega",
-          "locked"
-        );
-      }
+  const xUrl =
+    "https://twitter.com/intent/tweet?text=" +
+    encodeURIComponent(
+      text
+    ) +
+    "&url=" +
+    encodeURIComponent(
+      siteUrl
     );
 
 
-    document.getElementById(
-      "imageButton"
-    ).style.display =
-      "none";
+  window.open(
+    xUrl,
+    "_blank"
+  );
+}
 
 
-    document.getElementById(
-      "shareButton"
-    ).style.display =
-      "none";
+function resetDraw() {
+
+  currentTeam = [];
+  currentItems = [];
+  currentNatures = [];
+  currentImageUrls = [];
+
+  lockedSlots =
+    Array(6).fill(false);
+
+  currentMegaEnabled = false;
+  currentMegaIndex = -1;
+  currentMegaStone = "";
+
+  shareImageBlob = null;
 
 
-    document.getElementById(
-      "askButton"
-    ).style.display =
-      "none";
+  const slots =
+    document.querySelectorAll(
+      ".pokemon"
+    );
 
 
-    hideOldPreview();
+  slots.forEach(
+    slot => {
 
-    updateDrawButtonLabel();
+      slot.textContent =
+        "？";
 
 
-    document.getElementById(
-      "message"
-    ).textContent =
-      "選択したルールから、重複なしで6匹を抽選します。";
-  }
+      slot.classList.add(
+        "empty"
+      );
+
+
+      slot.classList.remove(
+        "mega",
+        "locked"
+      );
+    }
+  );
+
+
+  document.getElementById(
+    "imageButton"
+  ).style.display =
+    "none";
+
+
+  document.getElementById(
+    "shareButton"
+  ).style.display =
+    "none";
+
+
+  document.getElementById(
+    "askButton"
+  ).style.display =
+    "none";
+
+
+  hideOldPreview();
+
+  updateDrawButtonLabel();
+
+
+  document.getElementById(
+    "message"
+  ).textContent =
+    "選択したルールから、重複なしで6匹を抽選します。";
+}
 </script>
 
 <script src="./pwa.js"></script>
