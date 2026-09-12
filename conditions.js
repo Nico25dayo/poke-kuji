@@ -2,6 +2,7 @@
    ポケくじ
    ⑦ 抽選条件・縛り設定
    conditions.js
+   検索入力対応版
 ========================================================= */
 
 (() => {
@@ -10,7 +11,7 @@
 
 
   /* =========================================================
-     元の関数を保存
+     元の関数
   ========================================================= */
 
   const originalGetPokemonPool =
@@ -31,18 +32,27 @@
   const originalDrawPokemon =
     drawPokemon;
 
+  const originalRerollPokemon =
+    rerollPokemon;
+
 
   /* =========================================================
-     定数
+     状態
   ========================================================= */
 
   const CONDITIONS_STORAGE_KEY =
-    "pokeKujiConditionsV1";
+    "pokeKujiConditionsV2";
 
   let conditionsBypass =
     false;
 
   let conditionLastError =
+    "";
+
+  let selectedRequiredPokemon =
+    "";
+
+  let selectedExcludedPokemon =
     "";
 
 
@@ -51,9 +61,7 @@
   ========================================================= */
 
   const style =
-    document.createElement(
-      "style"
-    );
+    document.createElement("style");
 
   style.textContent = `
 
@@ -101,7 +109,7 @@
     }
 
     .condition-group {
-      margin-bottom: 17px;
+      margin-bottom: 18px;
     }
 
     .condition-label {
@@ -111,15 +119,110 @@
       margin-bottom: 7px;
     }
 
-    .condition-select {
+    .condition-search-wrap {
+      position: relative;
+    }
+
+    .condition-search-input {
       width: 100%;
-      padding: 12px 35px 12px 12px;
+      padding: 13px 42px 13px 13px;
       border-radius: 12px;
       border: 1px solid #ddd;
       background: #fff;
       color: #333;
+      font-size: 16px;
+      font-weight: 700;
+      outline: none;
+    }
+
+    .condition-search-input:focus {
+      border-color: #888;
+    }
+
+    .condition-search-input.selected {
+      border-color: #4a90e2;
+      background: #f7fbff;
+    }
+
+    .condition-clear-input {
+      display: none;
+      position: absolute;
+      right: 8px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 30px;
+      height: 30px;
+      border: none;
+      border-radius: 50%;
+      background: #eee;
+      color: #666;
+      font-size: 15px;
+      font-weight: 900;
+      cursor: pointer;
+    }
+
+    .condition-clear-input.show {
+      display: block;
+    }
+
+    .condition-suggestions {
+      display: none;
+      position: absolute;
+      z-index: 1000;
+      top: calc(100% + 5px);
+      left: 0;
+      right: 0;
+      max-height: 260px;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      border: 1px solid #ddd;
+      border-radius: 12px;
+      background: #fff;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+    }
+
+    .condition-suggestions.show {
+      display: block;
+    }
+
+    .condition-suggestion {
+      width: 100%;
+      border: none;
+      border-bottom: 1px solid #eee;
+      background: #fff;
+      color: #333;
+      padding: 13px 14px;
+      text-align: left;
       font-size: 14px;
       font-weight: 700;
+      cursor: pointer;
+    }
+
+    .condition-suggestion:last-child {
+      border-bottom: none;
+    }
+
+    .condition-suggestion:active {
+      background: #f3f4f6;
+    }
+
+    .condition-no-result {
+      padding: 15px;
+      text-align: center;
+      color: #999;
+      font-size: 13px;
+    }
+
+    .condition-selected-text {
+      display: none;
+      margin-top: 7px;
+      color: #2876c7;
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .condition-selected-text.show {
+      display: block;
     }
 
     .condition-help {
@@ -135,6 +238,17 @@
       background: #fff;
       border: 1px solid #e8e8e8;
       margin-bottom: 17px;
+    }
+
+    .condition-select {
+      width: 100%;
+      padding: 12px 35px 12px 12px;
+      border-radius: 12px;
+      border: 1px solid #ddd;
+      background: #fff;
+      color: #333;
+      font-size: 14px;
+      font-weight: 700;
     }
 
     .condition-reset {
@@ -169,36 +283,28 @@
 
   `;
 
-  document.head.appendChild(
-    style
-  );
+  document.head.appendChild(style);
 
 
   /* =========================================================
-     UI作成
+     UI
   ========================================================= */
 
   function createConditionUI() {
 
     const drawButton =
-      document.getElementById(
-        "drawButton"
-      );
+      document.getElementById("drawButton");
 
     if (
       !drawButton ||
-      document.getElementById(
-        "conditionPanel"
-      )
+      document.getElementById("conditionPanel")
     ) {
       return;
     }
 
 
     const toggleButton =
-      document.createElement(
-        "button"
-      );
+      document.createElement("button");
 
     toggleButton.id =
       "conditionToggleButton";
@@ -214,9 +320,7 @@
 
 
     const panel =
-      document.createElement(
-        "div"
-      );
+      document.createElement("div");
 
     panel.id =
       "conditionPanel";
@@ -241,17 +345,41 @@
 
         <label
           class="condition-label"
-          for="conditionRequiredPokemon">
+          for="conditionRequiredInput">
           ✅ 必ず入れるポケモン
         </label>
 
-        <select
-          id="conditionRequiredPokemon"
-          class="condition-select">
-        </select>
+        <div class="condition-search-wrap">
+
+          <input
+            id="conditionRequiredInput"
+            class="condition-search-input"
+            type="text"
+            inputmode="search"
+            autocomplete="off"
+            placeholder="ポケモン名を入力">
+
+          <button
+            id="conditionRequiredClear"
+            class="condition-clear-input"
+            type="button">
+            ×
+          </button>
+
+          <div
+            id="conditionRequiredSuggestions"
+            class="condition-suggestions">
+          </div>
+
+        </div>
+
+        <div
+          id="conditionRequiredSelected"
+          class="condition-selected-text">
+        </div>
 
         <div class="condition-help">
-          指定したポケモンを6匹の中に必ず1匹入れます。
+          名前を入力すると候補を絞り込めます。
         </div>
 
       </div>
@@ -261,17 +389,41 @@
 
         <label
           class="condition-label"
-          for="conditionExcludedPokemon">
+          for="conditionExcludedInput">
           🚫 抽選から除外するポケモン
         </label>
 
-        <select
-          id="conditionExcludedPokemon"
-          class="condition-select">
-        </select>
+        <div class="condition-search-wrap">
+
+          <input
+            id="conditionExcludedInput"
+            class="condition-search-input"
+            type="text"
+            inputmode="search"
+            autocomplete="off"
+            placeholder="ポケモン名を入力">
+
+          <button
+            id="conditionExcludedClear"
+            class="condition-clear-input"
+            type="button">
+            ×
+          </button>
+
+          <div
+            id="conditionExcludedSuggestions"
+            class="condition-suggestions">
+          </div>
+
+        </div>
+
+        <div
+          id="conditionExcludedSelected"
+          class="condition-selected-text">
+        </div>
 
         <div class="condition-help">
-          指定したポケモンを通常抽選から除外します。
+          名前を入力すると候補を絞り込めます。
         </div>
 
       </div>
@@ -342,10 +494,6 @@
 
         </select>
 
-        <div class="condition-help">
-          レギュレーションJのみ使用できます。
-        </div>
-
       </div>
 
 
@@ -364,9 +512,8 @@
 
 
       <div class="condition-warning">
-        🔥 チャレンジモード中は、
-        チャレンジのお題を優先するため
-        この設定は一時的に無効になります。
+        🔥 チャレンジモード中は
+        チャレンジのお題が優先されます。
       </div>
 
     `;
@@ -387,33 +534,22 @@
       "click",
       () => {
 
-        panel.classList.toggle(
-          "show"
-        );
+        panel.classList.toggle("show");
 
         toggleButton.classList.toggle(
           "active",
-          panel.classList.contains(
-            "show"
-          )
+          panel.classList.contains("show")
         );
       }
     );
 
 
-    document.getElementById(
-      "conditionRequiredPokemon"
-    ).addEventListener(
-      "change",
-      conditionChanged
+    setupSearchInput(
+      "required"
     );
 
-
-    document.getElementById(
-      "conditionExcludedPokemon"
-    ).addEventListener(
-      "change",
-      conditionChanged
+    setupSearchInput(
+      "excluded"
     );
 
 
@@ -441,90 +577,6 @@
     );
 
 
-    setupConditionOptions();
-
-    loadConditions();
-
-    updateConditionSummary();
-  }
-
-
-  /* =========================================================
-     ポケモン選択肢
-  ========================================================= */
-
-  function escapeHtml(
-    value
-  ) {
-
-    return String(value)
-      .replace(
-        /&/g,
-        "&amp;"
-      )
-      .replace(
-        /</g,
-        "&lt;"
-      )
-      .replace(
-        />/g,
-        "&gt;"
-      )
-      .replace(
-        /"/g,
-        "&quot;"
-      )
-      .replace(
-        /'/g,
-        "&#039;"
-      );
-  }
-
-
-  function setupConditionOptions() {
-
-    const pool =
-      originalGetPokemonPool();
-
-    const required =
-      document.getElementById(
-        "conditionRequiredPokemon"
-      );
-
-    const excluded =
-      document.getElementById(
-        "conditionExcludedPokemon"
-      );
-
-
-    const options =
-      pool.map(
-        pokemon => `
-          <option value="${escapeHtml(pokemon)}">
-            ${escapeHtml(pokemon)}
-          </option>
-        `
-      ).join("");
-
-
-    required.innerHTML =
-      `
-        <option value="">
-          指定なし
-        </option>
-      ` +
-      options;
-
-
-    excluded.innerHTML =
-      `
-        <option value="">
-          指定なし
-        </option>
-      ` +
-      options;
-
-
     document.getElementById(
       "conditionMegaWrap"
     ).style.display =
@@ -539,36 +591,586 @@
       isSVRegJ()
         ? "block"
         : "none";
+
+
+    loadConditions();
+
+    updateSearchDisplays();
+
+    updateConditionSummary();
   }
 
 
   /* =========================================================
-     設定取得
+     検索入力
+  ========================================================= */
+
+  function normalizeSearchText(text) {
+
+    return String(text || "")
+      .trim()
+      .toLowerCase()
+      .replace(/\s/g, "");
+  }
+
+
+  function getSearchElements(type) {
+
+    const prefix =
+      type === "required"
+        ? "conditionRequired"
+        : "conditionExcluded";
+
+    return {
+
+      input:
+        document.getElementById(
+          prefix + "Input"
+        ),
+
+      suggestions:
+        document.getElementById(
+          prefix + "Suggestions"
+        ),
+
+      clear:
+        document.getElementById(
+          prefix + "Clear"
+        ),
+
+      selected:
+        document.getElementById(
+          prefix + "Selected"
+        )
+    };
+  }
+
+
+  function getSelectedPokemon(type) {
+
+    return type === "required"
+      ? selectedRequiredPokemon
+      : selectedExcludedPokemon;
+  }
+
+
+  function setSelectedPokemon(
+    type,
+    pokemon
+  ) {
+
+    if (
+      type === "required"
+    ) {
+
+      selectedRequiredPokemon =
+        pokemon || "";
+
+    } else {
+
+      selectedExcludedPokemon =
+        pokemon || "";
+    }
+
+
+    updateSearchDisplays();
+
+    saveConditions();
+
+    updateConditionSummary();
+  }
+
+
+  function setupSearchInput(type) {
+
+    const elements =
+      getSearchElements(type);
+
+    const input =
+      elements.input;
+
+    const suggestions =
+      elements.suggestions;
+
+    const clear =
+      elements.clear;
+
+
+    input.addEventListener(
+      "focus",
+      () => {
+
+        showPokemonSuggestions(
+          type,
+          input.value
+        );
+      }
+    );
+
+
+    input.addEventListener(
+      "input",
+      () => {
+
+        const selected =
+          getSelectedPokemon(type);
+
+        /*
+          一度選んだポケモン名を
+          書き換え始めたら選択状態解除
+        */
+        if (
+          selected &&
+          input.value !== selected
+        ) {
+
+          if (
+            type === "required"
+          ) {
+            selectedRequiredPokemon = "";
+          } else {
+            selectedExcludedPokemon = "";
+          }
+
+          updateSearchDisplays();
+          saveConditions();
+          updateConditionSummary();
+        }
+
+
+        showPokemonSuggestions(
+          type,
+          input.value
+        );
+      }
+    );
+
+
+    input.addEventListener(
+      "keydown",
+      event => {
+
+        if (
+          event.key === "Enter"
+        ) {
+
+          event.preventDefault();
+
+          const matches =
+            getFilteredPokemon(
+              input.value
+            );
+
+          if (
+            matches.length === 1
+          ) {
+
+            choosePokemon(
+              type,
+              matches[0]
+            );
+
+            input.blur();
+          }
+        }
+
+
+        if (
+          event.key === "Escape"
+        ) {
+
+          suggestions.classList.remove(
+            "show"
+          );
+
+          input.blur();
+        }
+      }
+    );
+
+
+    clear.addEventListener(
+      "click",
+      () => {
+
+        setSelectedPokemon(
+          type,
+          ""
+        );
+
+        input.value =
+          "";
+
+        suggestions.classList.remove(
+          "show"
+        );
+
+        input.focus();
+
+        showPokemonSuggestions(
+          type,
+          ""
+        );
+      }
+    );
+  }
+
+
+  function getFilteredPokemon(
+    searchText
+  ) {
+
+    const pool =
+      originalGetPokemonPool();
+
+    const search =
+      normalizeSearchText(
+        searchText
+      );
+
+
+    if (
+      !search
+    ) {
+
+      return pool.slice(
+        0,
+        50
+      );
+    }
+
+
+    const startsWith =
+      [];
+
+    const contains =
+      [];
+
+
+    for (
+      const pokemon
+      of pool
+    ) {
+
+      const normalized =
+        normalizeSearchText(
+          pokemon
+        );
+
+
+      if (
+        normalized.startsWith(
+          search
+        )
+      ) {
+
+        startsWith.push(
+          pokemon
+        );
+
+      } else if (
+        normalized.includes(
+          search
+        )
+      ) {
+
+        contains.push(
+          pokemon
+        );
+      }
+    }
+
+
+    return [
+      ...startsWith,
+      ...contains
+    ].slice(
+      0,
+      50
+    );
+  }
+
+
+  function showPokemonSuggestions(
+    type,
+    searchText
+  ) {
+
+    const elements =
+      getSearchElements(type);
+
+    const suggestions =
+      elements.suggestions;
+
+    const matches =
+      getFilteredPokemon(
+        searchText
+      );
+
+
+    if (
+      matches.length === 0
+    ) {
+
+      suggestions.innerHTML = `
+        <div class="condition-no-result">
+          該当するポケモンが見つかりません
+        </div>
+      `;
+
+      suggestions.classList.add(
+        "show"
+      );
+
+      return;
+    }
+
+
+    suggestions.innerHTML =
+      "";
+
+
+    for (
+      const pokemon
+      of matches
+    ) {
+
+      const button =
+        document.createElement(
+          "button"
+        );
+
+      button.type =
+        "button";
+
+      button.className =
+        "condition-suggestion";
+
+      button.textContent =
+        pokemon;
+
+
+      button.addEventListener(
+        "mousedown",
+        event => {
+
+          event.preventDefault();
+        }
+      );
+
+
+      button.addEventListener(
+        "click",
+        () => {
+
+          choosePokemon(
+            type,
+            pokemon
+          );
+        }
+      );
+
+
+      suggestions.appendChild(
+        button
+      );
+    }
+
+
+    suggestions.classList.add(
+      "show"
+    );
+  }
+
+
+  function choosePokemon(
+    type,
+    pokemon
+  ) {
+
+    const otherSelected =
+      type === "required"
+        ? selectedExcludedPokemon
+        : selectedRequiredPokemon;
+
+
+    if (
+      otherSelected &&
+      otherSelected === pokemon
+    ) {
+
+      document.getElementById(
+        "message"
+      ).textContent =
+        "⚠️ 同じポケモンを「必須」と「除外」の両方には設定できません。";
+
+      return;
+    }
+
+
+    setSelectedPokemon(
+      type,
+      pokemon
+    );
+
+
+    const elements =
+      getSearchElements(type);
+
+    elements.input.value =
+      pokemon;
+
+    elements.suggestions.classList.remove(
+      "show"
+    );
+
+
+    document.getElementById(
+      "message"
+    ).textContent =
+      type === "required"
+        ? `✅ ${pokemon}を必ず入れる設定にしました。`
+        : `🚫 ${pokemon}を抽選から除外しました。`;
+  }
+
+
+  function updateSearchDisplays() {
+
+    updateSearchDisplay(
+      "required",
+      selectedRequiredPokemon
+    );
+
+    updateSearchDisplay(
+      "excluded",
+      selectedExcludedPokemon
+    );
+  }
+
+
+  function updateSearchDisplay(
+    type,
+    pokemon
+  ) {
+
+    const elements =
+      getSearchElements(type);
+
+    if (
+      !elements.input
+    ) {
+      return;
+    }
+
+
+    if (
+      pokemon
+    ) {
+
+      elements.input.value =
+        pokemon;
+
+      elements.input.classList.add(
+        "selected"
+      );
+
+      elements.clear.classList.add(
+        "show"
+      );
+
+      elements.selected.textContent =
+        `選択中：${pokemon}`;
+
+      elements.selected.classList.add(
+        "show"
+      );
+
+    } else {
+
+      elements.input.classList.remove(
+        "selected"
+      );
+
+      elements.clear.classList.remove(
+        "show"
+      );
+
+      elements.selected.textContent =
+        "";
+
+      elements.selected.classList.remove(
+        "show"
+      );
+    }
+  }
+
+
+  /*
+    候補以外をタップしたら
+    候補欄を閉じる
+  */
+  document.addEventListener(
+    "click",
+    event => {
+
+      const required =
+        document.getElementById(
+          "conditionRequiredSuggestions"
+        );
+
+      const excluded =
+        document.getElementById(
+          "conditionExcludedSuggestions"
+        );
+
+
+      if (
+        required &&
+        !event.target.closest(
+          "#conditionRequiredInput"
+        ) &&
+        !event.target.closest(
+          "#conditionRequiredSuggestions"
+        )
+      ) {
+
+        required.classList.remove(
+          "show"
+        );
+      }
+
+
+      if (
+        excluded &&
+        !event.target.closest(
+          "#conditionExcludedInput"
+        ) &&
+        !event.target.closest(
+          "#conditionExcludedSuggestions"
+        )
+      ) {
+
+        excluded.classList.remove(
+          "show"
+        );
+      }
+    }
+  );
+
+
+  /* =========================================================
+     条件取得
   ========================================================= */
 
   function getRequiredPokemon() {
 
-    const element =
-      document.getElementById(
-        "conditionRequiredPokemon"
-      );
-
-    return element
-      ? element.value
-      : "";
+    return selectedRequiredPokemon;
   }
 
 
   function getExcludedPokemon() {
 
-    const element =
-      document.getElementById(
-        "conditionExcludedPokemon"
-      );
-
-    return element
-      ? element.value
-      : "";
+    return selectedExcludedPokemon;
   }
 
 
@@ -580,10 +1182,12 @@
       return "auto";
     }
 
+
     const element =
       document.getElementById(
         "conditionMega"
       );
+
 
     return element
       ? element.value
@@ -599,17 +1203,21 @@
       return null;
     }
 
+
     const element =
       document.getElementById(
         "conditionSpecial"
       );
 
+
     if (
       !element ||
       element.value === "auto"
     ) {
+
       return null;
     }
+
 
     return Number(
       element.value
@@ -649,21 +1257,23 @@
           CONDITIONS_STORAGE_KEY
         );
 
+
       if (
         !saved
       ) {
         return {};
       }
 
+
       const parsed =
         JSON.parse(
           saved
         );
 
+
       return (
         parsed &&
-        typeof parsed ===
-          "object"
+        typeof parsed === "object"
       )
         ? parsed
         : {};
@@ -681,6 +1291,7 @@
 
     const all =
       getAllSavedConditions();
+
 
     all[
       getConditionStorageId()
@@ -702,9 +1313,7 @@
 
     localStorage.setItem(
       CONDITIONS_STORAGE_KEY,
-      JSON.stringify(
-        all
-      )
+      JSON.stringify(all)
     );
   }
 
@@ -719,6 +1328,7 @@
         getConditionStorageId()
       ];
 
+
     if (
       !saved
     ) {
@@ -730,17 +1340,6 @@
       originalGetPokemonPool();
 
 
-    const required =
-      document.getElementById(
-        "conditionRequiredPokemon"
-      );
-
-    const excluded =
-      document.getElementById(
-        "conditionExcludedPokemon"
-      );
-
-
     if (
       saved.required &&
       pool.includes(
@@ -748,7 +1347,7 @@
       )
     ) {
 
-      required.value =
+      selectedRequiredPokemon =
         saved.required;
     }
 
@@ -760,7 +1359,7 @@
       )
     ) {
 
-      excluded.value =
+      selectedExcludedPokemon =
         saved.excluded;
     }
 
@@ -787,20 +1386,15 @@
       isSVRegJ()
     ) {
 
-      const special =
-        saved.special;
-
       document.getElementById(
         "conditionSpecial"
       ).value =
         (
-          special === 0 ||
-          special === 1 ||
-          special === 2
+          saved.special === 0 ||
+          saved.special === 1 ||
+          saved.special === 2
         )
-          ? String(
-              special
-            )
+          ? String(saved.special)
           : "auto";
     }
   }
@@ -812,6 +1406,7 @@
 
     updateConditionSummary();
 
+
     document.getElementById(
       "message"
     ).textContent =
@@ -821,26 +1416,44 @@
 
   function resetConditions() {
 
-    document.getElementById(
-      "conditionRequiredPokemon"
-    ).value =
+    selectedRequiredPokemon =
       "";
 
-    document.getElementById(
-      "conditionExcludedPokemon"
-    ).value =
+    selectedExcludedPokemon =
       "";
+
+
+    const requiredInput =
+      document.getElementById(
+        "conditionRequiredInput"
+      );
+
+    const excludedInput =
+      document.getElementById(
+        "conditionExcludedInput"
+      );
+
+
+    requiredInput.value =
+      "";
+
+    excludedInput.value =
+      "";
+
 
     document.getElementById(
       "conditionMega"
     ).value =
       "auto";
 
+
     document.getElementById(
       "conditionSpecial"
     ).value =
       "auto";
 
+
+    updateSearchDisplays();
 
     saveConditions();
 
@@ -850,7 +1463,7 @@
     document.getElementById(
       "message"
     ).textContent =
-      "⚙️ 抽選条件をリセットしました。";
+      "⚙️ 抽選条件をすべてリセットしました。";
   }
 
 
@@ -864,6 +1477,7 @@
       document.getElementById(
         "conditionSummary"
       );
+
 
     if (
       !summary
@@ -910,6 +1524,7 @@
       const mega =
         getMegaCondition();
 
+
       if (
         mega === "force"
       ) {
@@ -936,6 +1551,7 @@
       const special =
         getSpecialCondition();
 
+
       if (
         special !== null
       ) {
@@ -947,26 +1563,15 @@
     }
 
 
-    if (
-      texts.length === 0
-    ) {
-
-      summary.textContent =
-        "現在は条件なしです。";
-
-      return;
-    }
-
-
     summary.innerHTML =
-      texts.join(
-        "<br>"
-      );
+      texts.length === 0
+        ? "現在は条件なしです。"
+        : texts.join("<br>");
   }
 
 
   /* =========================================================
-     条件チェック
+     エラー
   ========================================================= */
 
   function setConditionError(
@@ -975,6 +1580,7 @@
 
     conditionLastError =
       message;
+
 
     document.getElementById(
       "message"
@@ -1007,26 +1613,26 @@
     ) {
 
       setConditionError(
-        "同じポケモンを「必ず入れる」と「除外」の両方には指定できません。"
+        "同じポケモンを「必ず入れる」と「除外」の両方には設定できません。"
       );
 
       return false;
     }
 
 
-    const originalPool =
+    const pool =
       originalGetPokemonPool();
 
 
     if (
       required &&
-      !originalPool.includes(
+      !pool.includes(
         required
       )
     ) {
 
       setConditionError(
-        "指定した必須ポケモンはこのレギュレーションでは使用できません。"
+        "必須ポケモンがこのレギュレーションに存在しません。"
       );
 
       return false;
@@ -1037,30 +1643,23 @@
       isSVRegJ()
     ) {
 
-      const exactSpecial =
+      const special =
         getSpecialCondition();
 
+
       if (
-        exactSpecial !== null &&
-        required
+        special === 0 &&
+        required &&
+        isSVJSpecialPokemon(
+          required
+        )
       ) {
 
-        const requiredIsSpecial =
-          isSVJSpecialPokemon(
-            required
-          );
+        setConditionError(
+          "特別なポケモンを必須にしているため、特別枠0匹にはできません。"
+        );
 
-        if (
-          exactSpecial === 0 &&
-          requiredIsSpecial
-        ) {
-
-          setConditionError(
-            "特別なポケモンを必須にしているため、特別枠0匹にはできません。"
-          );
-
-          return false;
-        }
+        return false;
       }
     }
 
@@ -1082,9 +1681,6 @@
     const excluded =
       getExcludedPokemon();
 
-    const required =
-      getRequiredPokemon();
-
 
     for (
       let i = 0;
@@ -1095,45 +1691,11 @@
       if (
         lockedSlots[i] &&
         excluded &&
-        currentTeam[i] ===
-          excluded
+        currentTeam[i] === excluded
       ) {
 
         setConditionError(
-          `${excluded}が固定中です。固定を解除してから除外条件を使用してください。`
-        );
-
-        return false;
-      }
-    }
-
-
-    if (
-      required &&
-      !currentTeam.includes(
-        required
-      )
-    ) {
-
-      const sameSpeciesLocked =
-        currentTeam.some(
-          (pokemon, index) =>
-            lockedSlots[index] &&
-            getSpeciesKey(
-              pokemon
-            ) ===
-              getSpeciesKey(
-                required
-              )
-        );
-
-
-      if (
-        sameSpeciesLocked
-      ) {
-
-        setConditionError(
-          `${required}と同じ種族のポケモンが固定されています。固定を解除してください。`
+          `${excluded}が固定中です。固定を解除してください。`
         );
 
         return false;
@@ -1147,6 +1709,7 @@
 
       const exact =
         getSpecialCondition();
+
 
       if (
         exact !== null
@@ -1175,12 +1738,11 @@
 
 
         if (
-          lockedSpecial >
-            exact
+          lockedSpecial > exact
         ) {
 
           setConditionError(
-            `特別なポケモンが${lockedSpecial}匹固定されています。設定した${exact}匹より多いため再抽選できません。`
+            `特別なポケモンが${lockedSpecial}匹固定されています。設定は${exact}匹です。`
           );
 
           return false;
@@ -1191,8 +1753,7 @@
 
     if (
       isChampions() &&
-      getMegaCondition() ===
-        "none" &&
+      getMegaCondition() === "none" &&
       currentMegaEnabled &&
       currentMegaIndex >= 0 &&
       lockedSlots[
@@ -1201,7 +1762,7 @@
     ) {
 
       setConditionError(
-        "現在のメガ枠が固定されています。固定を解除してから「メガ枠なし」を使用してください。"
+        "現在のメガ枠が固定されています。固定を解除してください。"
       );
 
       return false;
@@ -1213,7 +1774,7 @@
 
 
   /* =========================================================
-     プール
+     Pokémon Pool上書き
   ========================================================= */
 
   getPokemonPool =
@@ -1251,7 +1812,7 @@
 
 
   /* =========================================================
-     共通処理
+     汎用
   ========================================================= */
 
   function randomFrom(
@@ -1259,6 +1820,7 @@
   ) {
 
     if (
+      !array ||
       array.length === 0
     ) {
       return null;
@@ -1274,48 +1836,14 @@
   }
 
 
-  function addPokemonIfPossible(
-    team,
-    pokemon
-  ) {
-
-    if (
-      !pokemon
-    ) {
-      return false;
-    }
-
-
-    if (
-      hasSameSpecies(
-        team,
-        pokemon
-      )
-    ) {
-
-      return false;
-    }
-
-
-    team.push(
-      pokemon
-    );
-
-    return true;
-  }
-
-
   function fillRandomUnique(
     team,
     pool,
-    targetLength,
-    filterFunction = null
+    targetLength
   ) {
 
     const shuffled =
-      shuffleArray(
-        pool
-      );
+      shuffleArray(pool);
 
 
     for (
@@ -1324,8 +1852,7 @@
     ) {
 
       if (
-        team.length >=
-        targetLength
+        team.length >= targetLength
       ) {
         break;
       }
@@ -1341,16 +1868,6 @@
       }
 
 
-      if (
-        filterFunction &&
-        !filterFunction(
-          pokemon
-        )
-      ) {
-        continue;
-      }
-
-
       team.push(
         pokemon
       );
@@ -1358,14 +1875,13 @@
 
 
     return (
-      team.length >=
-      targetLength
+      team.length >= targetLength
     );
   }
 
 
   /* =========================================================
-     SV 通常抽選
+     SV 条件抽選
   ========================================================= */
 
   function buildConditionedSVTeam() {
@@ -1387,8 +1903,7 @@
       required
     ) {
 
-      addPokemonIfPossible(
-        team,
+      team.push(
         required
       );
     }
@@ -1406,7 +1921,7 @@
         exact !== null
       ) {
 
-        let currentSpecial =
+        let specialCount =
           countSpecialPokemon(
             team
           );
@@ -1423,60 +1938,56 @@
           );
 
 
-        while (
-          currentSpecial <
-            exact
+        for (
+          const pokemon
+          of specialPool
         ) {
 
-          const next =
-            specialPool.find(
-              pokemon =>
-                !hasSameSpecies(
-                  team,
-                  pokemon
-                )
-            );
+          if (
+            specialCount >= exact
+          ) {
+            break;
+          }
 
 
           if (
-            !next
+            hasSameSpecies(
+              team,
+              pokemon
+            )
           ) {
-
-            conditionLastError =
-              "指定した特別枠数を満たせません。";
-
-            currentTeam =
-              [];
-
-            return;
+            continue;
           }
 
 
           team.push(
-            next
+            pokemon
           );
 
-
-          specialPool.splice(
-            specialPool.indexOf(
-              next
-            ),
-            1
-          );
+          specialCount++;
+        }
 
 
-          currentSpecial++;
+        if (
+          specialCount !== exact
+        ) {
+
+          conditionLastError =
+            "指定した特別枠数を作れませんでした。";
+
+          currentTeam =
+            [];
+
+          return;
         }
 
 
         const normalPool =
-          shuffleArray(
-            pool.filter(
-              pokemon =>
-                !isSVJSpecialPokemon(
-                  pokemon
-                )
-            )
+          pool.filter(
+            pokemon =>
+              !isSVJSpecialPokemon(
+                pokemon
+              )
           );
 
 
@@ -1487,27 +1998,12 @@
         );
 
 
-        if (
-          team.length !== 6
-        ) {
-
-          conditionLastError =
-            "条件を満たす6匹を作成できませんでした。";
-
-          currentTeam =
-            [];
-
-          return;
-        }
-
-
       } else {
 
         const shuffled =
           shuffleArray(
             pool
           );
-
 
         let specialCount =
           countSpecialPokemon(
@@ -1574,6 +2070,20 @@
     }
 
 
+    if (
+      team.length !== 6
+    ) {
+
+      conditionLastError =
+        "条件を満たす6匹を作成できませんでした。";
+
+      currentTeam =
+        [];
+
+      return;
+    }
+
+
     currentTeam =
       shuffleArray(
         team
@@ -1601,7 +2111,7 @@
 
 
   /* =========================================================
-     Champions 通常抽選
+     Champions 条件抽選
   ========================================================= */
 
   function buildConditionedChampionsTeam() {
@@ -1620,39 +2130,21 @@
 
 
     let useMega =
-      false;
-
-
-    if (
       megaMode === "force"
-    ) {
+        ? true
+        : megaMode === "none"
+          ? false
+          : Math.random() < 0.5;
 
-      useMega =
-        true;
 
-    } else if (
-      megaMode === "none"
-    ) {
-
-      useMega =
-        false;
-
-    } else {
-
-      useMega =
-        Math.random() < 0.5;
-    }
-
+    const team =
+      [];
 
     let megaPokemon =
       "";
 
     let megaStone =
       "";
-
-
-    const team =
-      [];
 
 
     if (
@@ -1671,9 +2163,10 @@
 
       if (
         required &&
-        megaCandidates.includes(
-          required
-        ) &&
+        getMegaOptions(
+          required,
+          rule
+        ).length > 0 &&
         Math.random() < 0.5
       ) {
 
@@ -1682,23 +2175,18 @@
 
       } else {
 
-        if (
-          required
-        ) {
-
-          megaCandidates =
-            megaCandidates.filter(
-              pokemon =>
-                getSpeciesKey(
-                  pokemon
-                ) !==
+        megaCandidates =
+          megaCandidates.filter(
+            pokemon =>
+              !required ||
+              getSpeciesKey(
+                pokemon
+              ) !==
                 getSpeciesKey(
                   required
                 ) ||
-                pokemon ===
-                  required
-            );
-        }
+              pokemon === required
+          );
 
 
         megaPokemon =
@@ -1717,7 +2205,7 @@
         ) {
 
           conditionLastError =
-            "メガシンカできるポケモンを抽選できませんでした。";
+            "メガシンカ可能なポケモンを抽選できませんでした。";
 
           currentTeam =
             [];
@@ -1736,22 +2224,18 @@
         );
 
 
-        const options =
-          getMegaOptions(
-            megaPokemon,
-            rule
-          );
-
-
-        const selectedOption =
+        const option =
           randomFrom(
-            options
+            getMegaOptions(
+              megaPokemon,
+              rule
+            )
           );
 
 
         megaStone =
-          selectedOption
-            ? selectedOption.stone
+          option
+            ? option.stone
             : "";
       }
     }
@@ -1801,12 +2285,14 @@
     currentMegaEnabled =
       useMega;
 
+
     currentMegaIndex =
       useMega
         ? currentTeam.indexOf(
             megaPokemon
           )
         : -1;
+
 
     currentMegaStone =
       useMega
@@ -1890,9 +2376,7 @@
 
 
     const nextTeam =
-      Array(6).fill(
-        ""
-      );
+      Array(6).fill("");
 
 
     for (
@@ -1925,9 +2409,7 @@
         !lockedSlots[i]
       ) {
 
-        unlocked.push(
-          i
-        );
+        unlocked.push(i);
       }
     }
 
@@ -1939,19 +2421,21 @@
       )
     ) {
 
-      const index =
-        unlocked.shift();
+      const target =
+        unlocked.find(
+          index =>
+            !nextTeam[index]
+        );
 
 
       if (
-        index === undefined
+        target === undefined
       ) {
-
         return false;
       }
 
 
-      nextTeam[index] =
+      nextTeam[target] =
         required;
     }
 
@@ -1968,17 +2452,14 @@
 
 
       if (
-        specialCount >
-          exact
+        specialCount > exact
       ) {
-
         return false;
       }
 
 
       while (
-        specialCount <
-          exact
+        specialCount < exact
       ) {
 
         const target =
@@ -1991,7 +2472,6 @@
         if (
           target === undefined
         ) {
-
           return false;
         }
 
@@ -2018,7 +2498,6 @@
         if (
           !selected
         ) {
-
           return false;
         }
 
@@ -2064,7 +2543,6 @@
         if (
           !selected
         ) {
-
           return false;
         }
 
@@ -2106,7 +2584,6 @@
                   pokemon
                 )
               ) {
-
                 return false;
               }
 
@@ -2118,7 +2595,6 @@
                   pokemon
                 )
               ) {
-
                 return false;
               }
 
@@ -2137,7 +2613,6 @@
         if (
           !selected
         ) {
-
           return false;
         }
 
@@ -2199,9 +2674,7 @@
 
 
     const nextTeam =
-      Array(6).fill(
-        ""
-      );
+      Array(6).fill("");
 
 
     for (
@@ -2234,9 +2707,7 @@
         !lockedSlots[i]
       ) {
 
-        unlocked.push(
-          i
-        );
+        unlocked.push(i);
       }
     }
 
@@ -2248,7 +2719,7 @@
       )
     ) {
 
-      const requiredIndex =
+      const target =
         unlocked.find(
           index =>
             !nextTeam[index]
@@ -2256,17 +2727,13 @@
 
 
       if (
-        requiredIndex ===
-          undefined
+        target === undefined
       ) {
-
         return false;
       }
 
 
-      nextTeam[
-        requiredIndex
-      ] =
+      nextTeam[target] =
         required;
     }
 
@@ -2323,57 +2790,12 @@
       megaIndex < 0
     ) {
 
-      const availableIndices =
-        unlocked.filter(
-          index =>
-            !nextTeam[index] ||
-            getMegaOptions(
-              nextTeam[index],
-              rule
-            ).length > 0
-        );
-
-
-      let candidates =
-        pool.filter(
-          pokemon =>
-            getMegaOptions(
-              pokemon,
-              rule
-            ).length > 0
-        );
-
-
-      candidates =
-        candidates.filter(
-          pokemon => {
-
-            return !nextTeam.some(
-              existing =>
-                existing &&
-                getSpeciesKey(
-                  existing
-                ) ===
-                  getSpeciesKey(
-                    pokemon
-                  ) &&
-                existing !==
-                  pokemon
-            );
-          }
-        );
-
-
       let chosenPokemon =
         "";
 
 
       if (
-        required &&
-        getMegaOptions(
-          required,
-          rule
-        ).length > 0
+        required
       ) {
 
         const requiredIndex =
@@ -2386,7 +2808,11 @@
           requiredIndex >= 0 &&
           !lockedSlots[
             requiredIndex
-          ]
+          ] &&
+          getMegaOptions(
+            required,
+            rule
+          ).length > 0
         ) {
 
           chosenPokemon =
@@ -2402,6 +2828,20 @@
         !chosenPokemon
       ) {
 
+        const candidates =
+          pool.filter(
+            pokemon =>
+              getMegaOptions(
+                pokemon,
+                rule
+              ).length > 0 &&
+              !hasSameSpecies(
+                nextTeam,
+                pokemon
+              )
+          );
+
+
         chosenPokemon =
           randomFrom(
             candidates
@@ -2412,20 +2852,11 @@
           chosenPokemon
         ) {
 
-          let target =
-            availableIndices.find(
+          const target =
+            unlocked.find(
               index =>
                 !nextTeam[index]
             );
-
-
-          if (
-            target === undefined
-          ) {
-
-            target =
-              availableIndices[0];
-          }
 
 
           if (
@@ -2450,7 +2881,6 @@
         if (
           megaMode === "force"
         ) {
-
           return false;
         }
 
@@ -2463,16 +2893,12 @@
 
       } else {
 
-        const options =
-          getMegaOptions(
-            chosenPokemon,
-            rule
-          );
-
-
         const option =
           randomFrom(
-            options
+            getMegaOptions(
+              chosenPokemon,
+              rule
+            )
           );
 
 
@@ -2515,7 +2941,6 @@
       if (
         !selected
       ) {
-
         return false;
       }
 
@@ -2557,8 +2982,7 @@
       }
 
 
-      let success =
-        false;
+      let success;
 
 
       if (
@@ -2578,7 +3002,6 @@
       if (
         !success
       ) {
-
         return false;
       }
 
@@ -2586,7 +3009,6 @@
       if (
         !rebuildItemsWithLocks()
       ) {
-
         return false;
       }
 
@@ -2599,13 +3021,11 @@
 
 
   /* =========================================================
-     1匹引き直し候補
+     1匹だけ再抽選
   ========================================================= */
 
   getAvailablePokemon =
-    function(
-      index
-    ) {
+    function(index) {
 
       let available =
         originalGetAvailablePokemon(
@@ -2632,8 +3052,7 @@
         available =
           available.filter(
             pokemon =>
-              pokemon !==
-                excluded
+              pokemon !== excluded
           );
       }
 
@@ -2650,15 +3069,6 @@
           exact !== null
         ) {
 
-          const currentPokemon =
-            currentTeam[index];
-
-          const currentIsSpecial =
-            isSVJSpecialPokemon(
-              currentPokemon
-            );
-
-
           const otherTeam =
             currentTeam.filter(
               (_, i) =>
@@ -2672,11 +3082,6 @@
             );
 
 
-          const mustBeSpecial =
-            otherCount <
-              exact;
-
-
           available =
             available.filter(
               pokemon => {
@@ -2685,14 +3090,6 @@
                   isSVJSpecialPokemon(
                     pokemon
                   );
-
-
-                if (
-                  mustBeSpecial
-                ) {
-
-                  return candidateSpecial;
-                }
 
 
                 return (
@@ -2713,18 +3110,8 @@
     };
 
 
-  /* =========================================================
-     必須ポケモンの1匹引き直し防止
-  ========================================================= */
-
-  const originalRerollPokemon =
-    rerollPokemon;
-
-
   rerollPokemon =
-    async function(
-      index
-    ) {
+    async function(index) {
 
       if (
         conditionsAreActive()
@@ -2736,14 +3123,13 @@
 
         if (
           required &&
-          currentTeam[index] ===
-            required
+          currentTeam[index] === required
         ) {
 
           document.getElementById(
             "message"
           ).textContent =
-            `⚙️ ${required}は「必ず入れるポケモン」に設定されているため引き直せません。`;
+            `⚙️ ${required}は必須ポケモンなので引き直せません。`;
 
           return;
         }
@@ -2757,7 +3143,7 @@
 
 
   /* =========================================================
-     通常抽選前チェック
+     通常抽選
   ========================================================= */
 
   drawPokemon =
@@ -2774,7 +3160,6 @@
         if (
           !validateConditions()
         ) {
-
           return;
         }
 
@@ -2782,7 +3167,6 @@
         if (
           !validateLocks()
         ) {
-
           return;
         }
       }
@@ -2801,12 +3185,12 @@
           "⚠️ " +
           conditionLastError;
       }
-  };
+    };
 
 
   /* =========================================================
      今日のポケくじ
-     条件を完全無視
+     条件を無視
   ========================================================= */
 
   drawTodayPokemon =
