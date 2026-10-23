@@ -5,32 +5,32 @@
 <meta name="theme-color" content="#11151f"><title>ドンくじ！｜★10ランダム選曲・疑似段位</title>
 <style>
 :root{color-scheme:dark;--bg:#0e121c;--panel:#1b2230;--panel2:#232d40;--line:#354055;--muted:#acb5c7;--ink:#f7f8fa;--accent:#fc7757;--gold:#ffc866;--green:#75ddb6;--violet:#b9a5ff}
-*{box-sizing:border-box}body{margin:0;background:radial-gradient(circle at 90% 0,#39314c 0,transparent 36%),var(--bg);font-family:system-ui,-apple-system,"Hiragino Kaku Gothic ProN","Noto Sans JP",sans-serif;color:var(--ink);font-size:15px}button,input,select{font:inherit}button{cursor:pointer;border:0}a{color:var(--gold)}main{max-width:660px;margin:0 auto;padding:18px 16px 70px}.top{display:flex;justify-content:space-between;align-items:center;gap:14px}.logo{font-weight:950;font-size:31px;letter-spacing:-1px}.logo b{color:var(--accent)}.small{color:var(--muted);font-size:12px;line-height:1.7}.tag{font-size:11px;color:#ffe0b0;background:#5a392c;border:1px solid #89523d;border-radius:99px;padding:6px 10px;white-space:nowrap}.lede{margin:9px 0 22px;color:var(--muted)}.tabs{display:flex;gap:9px;margin:0 0 20px}.tabs button{flex:1;padding:13px 7px;border-radius:14px;background:var(--panel);color:var(--muted);border:1px solid var(--line);font-weight:850}.tabs button.active{background:var(--accent);color:#191b22;border-color:var(--accent)}.panel{background:var(--panel);border:1px solid var(--line);border-radius:20px;padding:20px;margin-bottom:16px;box-shadow:0 14px 33px #0002}h2{font-size:21px;margin:0 0 6px}h3{font-size:16px;margin:0 0 12px}.hint{color:var(--muted);font-size:13px;line-height:1.65}.seg{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;margin:17px 0}.seg button{background:var(--panel2);color:var(--ink);border:1px solid var(--line);border-radius:12px;padding:12px 4px;font-weight:800;font-size:13px}.seg button.selected{background:#4e3851;border-color:var(--accent);color:#ffd6cd}.bigbtn{width:100%;margin-top:12px;background:var(--accent);padding:15px;border-radius:14px;color:#211617;font-weight:950;font-size:17px;box-shadow:0 5px 0 #a7473e}.bigbtn:active{transform:translateY(3px);box-shadow:0 2px 0 #a7473e}.line{height:1px;background:var(--line);margin:17px 0}.song{display:flex;align-items:center;gap:14px;background:var(--panel2);padding:15px;border-radius:15px;border:1px solid #435067;margin:9px 0}.step{height:42px;min-width:42px;display:grid;place-items:center;background:#3c4459;border-radius:12px;font-weight:900;color:var(--gold)}.songtitle{font-weight:800;font-size:17px;overflow-wrap:anywhere}.songmeta{font-size:12px;color:var(--muted);padding-top:4px}.empty{color:var(--muted);border:1px dashed var(--line);padding:30px 18px;border-radius:14px;text-align:center}.conditions{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:16px}.cond{background:#111824;border:1px solid var(--line);border-radius:13px;padding:13px}.cond label{display:block;color:var(--muted);font-size:12px;margin-bottom:5px}.cond strong{font-size:17px}.sstatus{display:inline-flex;gap:7px;align-items:center;font-size:12px;color:var(--muted)}.pill{display:inline-block;border-radius:99px;padding:4px 8px;background:#3c4255;font-size:11px;font-weight:700}.note{border-left:3px solid var(--gold);padding-left:12px;color:var(--muted);font-size:12px;line-height:1.7;margin:15px 0}.results{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:7px}.field label{display:block;color:var(--muted);font-size:11px;margin-bottom:5px}.field input{width:100%;background:#101725;border:1px solid #4a5369;border-radius:9px;color:var(--ink);padding:10px 5px;text-align:center;min-width:0}.resulthead{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:8px 0 12px}.resulthead strong{font-size:13px}.secondary{border:1px solid var(--line);background:var(--panel2);color:var(--ink);padding:10px 12px;border-radius:12px;font-weight:800}.verdict{padding:15px;text-align:center;border-radius:13px;margin-top:12px;font-weight:900;background:#33313a;border:1px solid var(--line)}.pass{background:#194837;border-color:#429674;color:#acf5cb}.fail{background:#4d292e;border-color:#a44f58;color:#ffc8cb}.hidden{display:none!important}.settings{display:flex;gap:8px;flex-wrap:wrap;align-items:center}.file{display:none}.datafoot{margin-top:8px;color:var(--muted);font-size:12px}.course-desc{min-height:19px}.info{font-size:12px;color:var(--muted);line-height:1.7}footer{font-size:11px;color:#8c94a8;text-align:center;padding-top:14px}@media(max-width:375px){.seg button{font-size:11px}.panel{padding:16px}.songtitle{font-size:15px}}
-.preview-warning{background:#50302e;border:1px solid #c36c56;border-radius:13px;padding:14px;margin:13px 0;color:#ffddcd;font-weight:750;line-height:1.7;font-size:14px}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(circle at 90% 0,#39314c 0,transparent 36%),var(--bg);font-family:system-ui,-apple-system,"Hiragino Kaku Gothic ProN","Noto Sans JP",sans-serif;color:var(--ink);font-size:15px}button,input,select{font:inherit}button{cursor:pointer;border:0}a{color:var(--gold)}main{max-width:660px;margin:0 auto;padding:18px 16px 70px}.top{display:flex;justify-content:space-between;align-items:center;gap:14px}.logo{font-weight:950;font-size:31px;letter-spacing:-1px}.logo b{color:var(--accent)}.small{color:var(--muted);font-size:12px;line-height:1.7}.tag{font-size:11px;color:#ffe0b0;background:#5a392c;border:1px solid #89523d;border-radius:99px;padding:6px 10px;white-space:nowrap}.lede{margin:9px 0 22px;color:var(--muted)}.tabs{display:flex;gap:9px;margin:0 0 20px}.tabs button{flex:1;padding:13px 7px;border-radius:14px;background:var(--panel);color:var(--muted);border:1px solid var(--line);font-weight:850}.tabs button.active{background:var(--accent);color:#191b22;border-color:var(--accent)}.panel{background:var(--panel);border:1px solid var(--line);border-radius:20px;padding:20px;margin-bottom:16px;box-shadow:0 14px 33px #0002}h2{font-size:21px;margin:0 0 6px}h3{font-size:16px;margin:0 0 12px}.hint{color:var(--muted);font-size:13px;line-height:1.65}.seg{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px;margin:17px 0}.seg button{background:var(--panel2);color:var(--ink);border:1px solid var(--line);border-radius:12px;padding:12px 2px;font-weight:800;font-size:12px}.seg button.selected{background:#4e3851;border-color:var(--accent);color:#ffd6cd}.bigbtn{width:100%;margin-top:12px;background:var(--accent);padding:15px;border-radius:14px;color:#211617;font-weight:950;font-size:17px;box-shadow:0 5px 0 #a7473e}.bigbtn:active{transform:translateY(3px);box-shadow:0 2px 0 #a7473e}.line{height:1px;background:var(--line);margin:17px 0}.song{display:flex;align-items:center;gap:14px;background:var(--panel2);padding:15px;border-radius:15px;border:1px solid #435067;margin:9px 0}.step{height:42px;min-width:42px;display:grid;place-items:center;background:#3c4459;border-radius:12px;font-weight:900;color:var(--gold)}.songtitle{font-weight:800;font-size:17px;overflow-wrap:anywhere}.songmeta{font-size:12px;color:var(--muted);padding-top:4px}.empty{color:var(--muted);border:1px dashed var(--line);padding:30px 18px;border-radius:14px;text-align:center}.conditions{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:16px}.cond{background:#111824;border:1px solid var(--line);border-radius:13px;padding:13px}.cond label{display:block;color:var(--muted);font-size:12px;margin-bottom:5px}.cond strong{font-size:17px}.sstatus{display:inline-flex;gap:7px;align-items:center;font-size:12px;color:var(--muted)}.pill{display:inline-block;border-radius:99px;padding:4px 8px;background:#3c4255;font-size:11px;font-weight:700}.note{border-left:3px solid var(--gold);padding-left:12px;color:var(--muted);font-size:12px;line-height:1.7;margin:15px 0}.results{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:7px}.field label{display:block;color:var(--muted);font-size:11px;margin-bottom:5px}.field input{width:100%;background:#101725;border:1px solid #4a5369;border-radius:9px;color:var(--ink);padding:10px 5px;text-align:center;min-width:0}.resulthead{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:8px 0 12px}.resulthead strong{font-size:13px}.secondary{border:1px solid var(--line);background:var(--panel2);color:var(--ink);padding:10px 12px;border-radius:12px;font-weight:800}.verdict{padding:15px;text-align:center;border-radius:13px;margin-top:12px;font-weight:900;background:#33313a;border:1px solid var(--line)}.pass{background:#194837;border-color:#429674;color:#acf5cb}.fail{background:#4d292e;border-color:#a44f58;color:#ffc8cb}.hidden{display:none!important}.settings{display:flex;gap:8px;flex-wrap:wrap;align-items:center}.file{display:none}.datafoot{margin-top:8px;color:var(--muted);font-size:12px}.course-desc{min-height:19px}.info{font-size:12px;color:var(--muted);line-height:1.7}footer{font-size:11px;color:#8c94a8;text-align:center;padding-top:14px}@media(max-width:375px){.seg button{font-size:11px}.panel{padding:16px}.songtitle{font-size:15px}}
+.over{display:inline-block;color:#ffd8a1;background:#57472c;border:1px solid #937148;padding:2px 7px;border-radius:7px;margin-left:5px;font-size:11px}.preview-warning{background:#50302e;border:1px solid #c36c56;border-radius:13px;padding:14px;margin:13px 0;color:#ffddcd;font-weight:750;line-height:1.7;font-size:14px}
 </style>
 </head>
 <body>
 <main>
 <div class="preview-warning" id="preview-warning">⚠ この画面でボタンが反応しない場合は、ChatGPTのファイルプレビューが動作を制限しています。アプリのHTMLをGitHub PagesなどのWebサイトに置き、SafariでWebページのURLを開いてください。</div>
-<header class="top"><div class="logo">ドン<b>くじ！</b></div><span class="tag">試作版 v0.3</span></header>
+<header class="top"><div class="logo">ドン<b>くじ！</b></div><span class="tag">試作版 v0.5｜5段位</span></header>
 <p class="lede">★10オンリー。今日の運命は、くじに任せろ。</p>
 <nav class="tabs" aria-label="モード"><button id="tab-single" class="active">🥁 一曲入魂</button><button id="tab-dan">🏆 裏・段位試練</button></nav>
 <section id="single">
 <div class="panel"><h2>一曲入魂</h2><div class="hint">おに★10から1譜面を抽選。表と裏は別の抽選候補。</div><button class="bigbtn" id="single-draw">ランダム選曲！</button><div id="single-output" class="empty" style="margin-top:19px">まだ抽選していません</div></div>
 </section>
 <section id="dan" class="hidden">
-<div class="panel"><h2>裏・段位試練</h2><div class="hint">1曲目はやや易しく、2曲目で本領、3曲目はボス曲！</div>
-<div class="seg" id="ranks"><button data-rank="0" class="selected">初級</button><button data-rank="1">中級</button><button data-rank="2">上級</button><button data-rank="3">達神級</button></div><div id="course-desc" class="hint course-desc"></div>
+<div class="panel"><h2>裏・段位試練</h2><div class="hint">3曲セットで抽選！ 1曲目より3曲目が難しくなる構成。達神級はLv5のみ＆追い越し譜面の2曲連続なし。</div>
+<div class="seg" id="ranks"><button data-rank="0" class="selected">初級</button><button data-rank="1">中級</button><button data-rank="2">上級</button><button data-rank="3">達人級</button><button data-rank="4">達神級</button></div><div id="course-desc" class="hint course-desc"></div>
 <button class="bigbtn" id="dan-draw">3曲を抽選する</button>
 <div id="dan-output" class="empty" style="margin-top:18px">段位を選んで抽選してください</div>
-<div id="grade-conditions" class="hidden"><div class="line"></div><h3>合格条件</h3><div id="condition-grid" class="conditions"></div><p id="condition-note" class="note"></p></div>
+<div id="grade-conditions" class="hidden"><div class="line"></div><h3>合格条件</h3><div id="condition-grid" class="conditions"></div><p id="condition-note" class="note"></p><p class="hint">※条件だけの引き直しはできません。再抽選すると3曲と条件がまとめて変わります。</p></div>
 </div>
-<div id="score-panel" class="panel hidden"><h2>プレイ結果を入力</h2><p class="hint">各曲のリザルトを見て良・可・不可・連打を入力すると合否を判定します。</p><div id="score-rows"></div><button class="bigbtn" id="judge">合否判定</button><div id="verdict" aria-live="polite"></div></div>
+<div id="score-panel" class="panel hidden"><h2>プレイ結果を入力</h2><p class="hint">各曲のリザルトを見て良・可・不可・連打を入力すると、抽選された条件で合否を判定します。</p><div id="score-rows"></div><button class="bigbtn" id="judge">合否判定</button><div id="verdict" aria-live="polite"></div></div>
 </section>
 <div class="panel"><div class="resulthead"><h3 style="margin:0">曲データ</h3><span id="data-count" class="pill"></span></div>
-<p class="info">初期収録は抽選動作を確かめるための<strong>一部サンプル曲</strong>です。2026年10月23日時点で「現行★10を全曲収録済み」とは保証できません。各曲の現行収録状況と表裏を確認した正式リストをJSONで取り込める設計です。</p>
+<p class="info">初期収録は動作確認用の<strong>一部サンプル譜面</strong>で、現行ニジイロ2026の★10全曲リストではありません。曲の収録状況・表裏・相対Lv・追い越し分類は正式版で要検証です。</p>
 <div class="settings"><button class="secondary" id="import-btn">JSONで曲データを取り込む</button><button class="secondary" id="reset-data">サンプルに戻す</button></div><input type="file" id="file" class="file" accept=".json,application/json"><div class="datafoot" id="data-status"></div>
-<p class="info">JSON形式：<code>[{"title":"曲名","chart":"表","tier":1,"notes":800,"rollSeconds":3.2}]</code><br>tierは1（易）〜5（超難関）。notesとrollSecondsが未確認の場合は省略できます。連打条件は全3譜面の連打秒数が確認できている時だけ生成します。</p>
+<p class="info">JSON形式：<code>[{"title":"曲名","chart":"表","tier":1,"notes":800,"rollSeconds":3.2,"overtake":false}]</code><br>tierは1（易）〜5（超難関）。notesとrollSecondsが未確認の場合は省略できます。達神級の抽選に使うLv5譜面では<code>overtake</code>（true/false）を必ず指定してください。連打条件は全3譜面の連打秒数が確認できている時だけ生成します。</p>
 </div>
 <footer>ファン制作の非公式試作アプリです。株式会社バンダイナムコエンターテインメントとは無関係です。<br>楽曲・譜面データの正確性は正式公開前に検証してください。</footer>
 </main>
@@ -45,31 +45,98 @@ const pools = [
 ['第六天魔王','幽玄ノ乱','poxei♦︎DOON','Infinite Rebellion','ドンカマ2000','!!!カオスタイム!!!','‡‡‡カオスタイム the DARK‡‡‡','ダーク・エクス・マキナ♡','ダーク・エクス・マキナ！','≠MM','双竜ノ乱','憎悪と醜悪の花束']
 ];
 let sample=pools.flatMap((names,i)=>names.map((name,j)=>({title:name,chart:'表',tier:i+1,id:`sample-${i}-${j}`})));
-// 検証済みの個別譜面のみ修正。全曲の「表」ラベルはあくまでデモ用。
+// 個別譜面の例。全曲の「表」ラベル・Lv分類はあくまでデモ用。
 sample=sample.filter(s=>!(s.title==='GIGALODOON'||s.title==='8OROCHI'));
 sample.push({title:'GIGALODOON',chart:'表',tier:2,notes:773,rollSeconds:2.604},{title:'GIGALODOON',chart:'裏',tier:4,notes:1090,rollSeconds:1.438},{title:'8OROCHI',chart:'表',tier:3,notes:958,rollSeconds:0.847},{title:'8OROCHI',chart:'裏',tier:3,notes:1001,rollSeconds:0.847});
-const CONFIG=[{label:'初級',tiers:[[1],[1,2],[2]],good:.78,ok:230,miss:65,rps:7},{label:'中級',tiers:[[2],[2,3],[3]],good:.85,ok:150,miss:38,rps:10},{label:'上級',tiers:[[3],[3,4],[4]],good:.91,ok:95,miss:21,rps:13},{label:'達神級',tiers:[[4],[4,5],[5]],good:.995,ok:10,miss:1,rps:20}];
+// デモではLv5の追い越し属性を明示的に指定する。falseを含め、実際の全譜面判定ではない。
+const overtakingDemoTitles=new Set(['ドンカマ2000','!!!カオスタイム!!!','‡‡‡カオスタイム the DARK‡‡‡']);
+sample=sample.map(s=>({...s,overtake:s.tier===5?overtakingDemoTitles.has(s.title):false}));
+// 値は各段位の抽選可能範囲（3曲合計）。良だけは％。可・不可は上限を含む。
+// 達神級は「良」の独立条件を設けない。可0・不可0を引いたときは全良必須。
+// 全良と条件完全ランダムは同時には成立しないため、不可0は固定し、可と連打を変動させる。
+const CONFIG=[
+ {label:'初級',tiers:[[1],[1,2],[2]],goodPct:[75,84],ok:[200,300],miss:[40,70],rps:[6,9]},
+ {label:'中級',tiers:[[2],[2,3],[3]],goodPct:[85,91],ok:[100,180],miss:[20,35],rps:[9,12]},
+ {label:'上級',tiers:[[3],[3,4],[4]],goodPct:[92,97],ok:[30,90],miss:[3,15],rps:[13,17]},
+ {label:'達人級',tiers:[[4],[4,5],[5]],goodPct:null,ok:[3,10],miss:[0,0],rps:[16,20]},
+ {label:'達神級',tiers:[[5],[5],[5]],goodPct:null,ok:[0,0],miss:[0,0],rps:[20,25],noConsecutiveOvertake:true}
+];
 let songs=sample,rank=0,run=null,mode='single';
 const $=(id)=>document.getElementById(id);
 const escapeHtml=(str)=>String(str).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const rnd=(array)=>array[Math.floor(Math.random()*array.length)];
+const randint=([min,max])=>min+Math.floor(Math.random()*(max-min+1));
 const uniq=(s)=>s.title.normalize('NFKC').trim();
 function showMode(next){mode=next;$('single').classList.toggle('hidden',mode!=='single');$('dan').classList.toggle('hidden',mode!=='dan');$('tab-single').classList.toggle('active',mode==='single');$('tab-dan').classList.toggle('active',mode==='dan');}
 $('tab-single').onclick=()=>showMode('single');$('tab-dan').onclick=()=>showMode('dan');
-function songMarkup(s,step='♪'){return `<div class="song"><div class="step">${step}</div><div style="min-width:0"><div class="songtitle">${escapeHtml(s.title)}</div><div class="songmeta">おに★10・${escapeHtml(s.chart)}譜面　<span class="pill">★10内レベル ${s.tier}</span></div></div></div>`;}
+function songMarkup(s,step='♪'){return `<div class="song"><div class="step">${step}</div><div style="min-width:0"><div class="songtitle">${escapeHtml(s.title)}</div><div class="songmeta">おに★10・${escapeHtml(s.chart)}譜面　<span class="pill">★10内レベル ${s.tier}</span>${s.overtake===true?'<span class="over">↝ 追い越し</span>':''}</div></div></div>`;}
 $('single-draw').onclick=()=>{if(!songs.length)return;$('single-output').classList.remove('empty');$('single-output').innerHTML=songMarkup(rnd(songs));};
-function rankText(){let c=CONFIG[rank];$('course-desc').textContent=`${c.label}：1曲目 Lv${c.tiers[0].join('/')} → 2曲目 Lv${c.tiers[1].join('/')} → 3曲目 Lv${c.tiers[2].join('/')}（★10内の相対レベル）${rank===3?'｜不可0・可9以下・良99.5%以上の超難関！':''}`;}
-$('ranks').querySelectorAll('button').forEach(b=>b.onclick=()=>{rank=Number(b.dataset.rank);$('ranks').querySelectorAll('button').forEach(x=>x.classList.toggle('selected',x===b));rankText();});rankText();
-function chooseCourse(c){const result=[];for(const tiers of c.tiers){let choices=songs.filter(s=>tiers.includes(s.tier)&&!result.some(v=>uniq(v)===uniq(s)));if(!choices.length)return null;result.push(rnd(choices));}return result;}
-function makeConditions(charts,c){const knownNotes=charts.every(s=>Number.isFinite(s.notes)&&s.notes>0);const total=knownNotes?charts.reduce((n,s)=>n+s.notes,0):null;
-const rollKnown=charts.every(s=>Number.isFinite(s.rollSeconds)&&s.rollSeconds>=0);const rollSeconds=rollKnown?charts.reduce((n,s)=>n+s.rollSeconds,0):null;
-return {notes:total,goodCount:total?Math.ceil(total*c.good):null,goodRate:c.good,okMax:c.ok,missMax:c.miss,rollMin:rollSeconds>0?Math.ceil(rollSeconds*c.rps):null,rollSeconds};}
-function renderConditions(){const p=run.condition;const boxes=[['良',p.goodCount!==null?`${p.goodCount}以上`:`${Number((p.goodRate*100).toFixed(1))}%以上`],['可',`${p.okMax-1}個まで`],['不可',`${p.missMax-1}個まで`],['連打',p.rollMin!==null?`${p.rollMin}打以上`:'データ確認後に設定']];$('condition-grid').innerHTML=boxes.map(([label,v])=>`<div class="cond"><label>${label}</label><strong>${v}</strong></div>`).join('');$('condition-note').textContent=p.notes===null?'総ノーツ数が未登録の譜面を含むため、良は暫定的に良率で判定します。連打秒数が不明な場合は連打条件を設定しません。':'良は3譜面の総ノーツ数を基に算出。連打条件は全譜面の連打秒数が確認できる場合のみ生成します。';}
-$('dan-draw').onclick=()=>{const c=CONFIG[rank];const charts=chooseCourse(c);if(!charts){alert('この段位を構成できる譜面が足りません。曲データを確認してください。');return;}run={charts,condition:makeConditions(charts,c),rank};$('dan-output').classList.remove('empty');$('dan-output').innerHTML=charts.map((s,i)=>songMarkup(s,String(i+1))).join('');$('grade-conditions').classList.remove('hidden');$('score-panel').classList.remove('hidden');$('verdict').innerHTML='';renderConditions();$('score-rows').innerHTML=charts.map((s,i)=>`<div class="line"></div><div class="resulthead"><strong>${i+1}曲目　${escapeHtml(s.title)}（${escapeHtml(s.chart)}）</strong><span class="pill">${s.notes||'ノーツ未登録'}</span></div><div class="results">${[['良','good'],['可','ok'],['不可','miss'],['連打','roll']].map(([label,id])=>`<div class="field"><label for="${id}-${i}">${label}</label><input inputmode="numeric" type="number" min="0" id="${id}-${i}" placeholder="0" aria-label="${i+1}曲目 ${label}"></div>`).join('')}</div>`).join('');};
-$('judge').onclick=()=>{if(!run)return;const sums={good:0,ok:0,miss:0,roll:0};let incomplete=false,notesError=[];run.charts.forEach((s,i)=>{let n={};for(const key of Object.keys(sums)){let raw=$(`${key}-${i}`).value;if(!/^\d+$/.test(raw.trim()))incomplete=true;else{n[key]=Number(raw);sums[key]+=n[key];}}if(s.notes&&Object.hasOwn(n,'good')&&Object.hasOwn(n,'ok')&&Object.hasOwn(n,'miss')&&n.good+n.ok+n.miss!==s.notes){notesError.push(`${i+1}曲目（${s.notes}ノーツ）`);}});if(incomplete){$('verdict').innerHTML='<div class="verdict">全項目を0以上の整数で入力してください。</div>';return;}if(notesError.length){$('verdict').innerHTML=`<div class="verdict">${notesError.join('・')}の良＋可＋不可が最大コンボ数と一致しません。</div>`;return;}const c=run.condition,total=sums.good+sums.ok+sums.miss;const goodPass=c.goodCount!==null?sums.good>=c.goodCount:total>0&&sums.good/total>=c.goodRate;const checks=[['良',goodPass],['可',sums.ok<c.okMax],['不可',sums.miss<c.missMax],...(c.rollMin!==null?[['連打',sums.roll>=c.rollMin]]:[])];const passed=checks.every(x=>x[1]);$('verdict').innerHTML=`<div class="verdict ${passed?'pass':'fail'}">${passed?'🎉 合格！':'💥 不合格'}<div style="font-size:12px;margin-top:7px;font-weight:500">${checks.map(([label,v])=>`${label} ${v?'✓':'×'}`).join('　')}</div></div>`;};
-function validSong(s){return s&&typeof s.title==='string'&&s.title.trim().length>0&&['表','裏'].includes(s.chart)&&[1,2,3,4,5].includes(Number(s.tier))&&(!Object.hasOwn(s,'notes')||(Number.isInteger(s.notes)&&s.notes>0))&&(!Object.hasOwn(s,'rollSeconds')||(typeof s.rollSeconds==='number'&&s.rollSeconds>=0));}
+function rankText(){
+ const c=CONFIG[rank];
+ const line=`${c.label}：1曲目 Lv${c.tiers[0].join('/')} → 2曲目 Lv${c.tiers[1].join('/')} → 3曲目 Lv${c.tiers[2].join('/')}（★10内の相対レベル）`;
+ $('course-desc').textContent=line+(rank===4?'｜全良必須・追い越し2曲連続禁止':rank===3?'｜不可0・超高精度の達人仕様':'');
+}
+$('ranks').querySelectorAll('button').forEach(b=>b.onclick=()=>{
+ rank=Number(b.dataset.rank);
+ $('ranks').querySelectorAll('button').forEach(x=>x.classList.toggle('selected',x===b));
+ rankText();
+ run=null;
+ $('dan-output').className='empty';$('dan-output').textContent='段位を選んで抽選してください';
+ $('grade-conditions').classList.add('hidden');$('score-panel').classList.add('hidden');
+});rankText();
+// ギミック制約も守れる3譜面をバックトラックで均等に近い順序で探す。
+function shuffle(a){const out=[...a];for(let i=out.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[out[i],out[j]]=[out[j],out[i]];}return out;}
+function chooseCourse(c){
+ const result=[];
+ function visit(index){
+  if(index===3)return [...result];
+  let choices=songs.filter(s=>c.tiers[index].includes(s.tier)&&!result.some(v=>uniq(v)===uniq(s)));
+  if(c.noConsecutiveOvertake){
+   // 未分類譜面は選ばず、追い越し条件を正確に保証する。
+   choices=choices.filter(s=>typeof s.overtake==='boolean');
+   if(index>0&&result[index-1].overtake===true)choices=choices.filter(s=>s.overtake!==true);
+  }
+  for(const s of shuffle(choices)){
+   result.push(s);
+   const found=visit(index+1);
+   if(found)return found;
+   result.pop();
+  }
+  return null;
+ }
+ return visit(0);
+}
+function makeConditions(charts,c){
+ const knownNotes=charts.every(s=>Number.isFinite(s.notes)&&s.notes>0);
+ const total=knownNotes?charts.reduce((n,s)=>n+s.notes,0):null;
+ const rollKnown=charts.every(s=>Number.isFinite(s.rollSeconds)&&s.rollSeconds>=0);
+ const rollSeconds=rollKnown?charts.reduce((n,s)=>n+s.rollSeconds,0):null;
+ const goodRate=c.goodPct===null?null:randint(c.goodPct)/100;
+ const rps=randint(c.rps);
+ return {notes:total,goodCount:total!==null&&goodRate!==null?Math.ceil(total*goodRate):null,
+  goodRate,okMax:randint(c.ok),missMax:randint(c.miss),
+  rollMin:rollSeconds!==null&&rollSeconds>0?Math.ceil(rollSeconds*rps):null,
+  rollSeconds,rps};
+}
+function renderConditions(){
+ const p=run.condition;
+ const boxes=[
+  ...(p.goodRate===null?[]:[['良',p.goodCount!==null?`${p.goodCount}以上`:`${Math.round(p.goodRate*100)}%以上`]]),
+  ['可',`${p.okMax}個まで`],['不可',`${p.missMax}個まで`],
+  ['連打',p.rollMin!==null?`${p.rollMin}打以上`:`${p.rps}打/秒（目標のみ）`]
+ ];
+ $('condition-grid').innerHTML=boxes.map(([label,v])=>`<div class="cond"><label>${label}</label><strong>${v}</strong></div>`).join('');
+ const notesHint=p.goodRate!==null&&p.notes===null?'総ノーツ数が未登録の譜面を含むため、良は良率で暫定判定します。':'';
+ const rollHint=p.rollMin===null?'全3譜面の連打可能秒数が未確認のため、連打条件は今回の合否判定に含めません。':'';
+ const special=run.rank===4?'達神級：Lv5のみ。可0・不可0の全良必須。追い越し譜面の連続は不可。連打目標のみ抽選で変動します。':run.rank===3?'達人級：不可0固定、可と連打目標は抽選で変動します。':'合格条件は段位別の範囲から毎回ランダムに抽選しています。';
+ $('condition-note').textContent=[special,notesHint,rollHint].filter(Boolean).join(' ');
+}
+$('dan-draw').onclick=()=>{const c=CONFIG[rank];const charts=chooseCourse(c);if(!charts){alert('この段位を構成できる譜面が足りません。達神級はLv5が3曲以上必要で、各譜面のovertake（追い越し有無）をtrue/falseで指定してください。');return;}run={charts,condition:makeConditions(charts,c),rank};$('dan-output').classList.remove('empty');$('dan-output').innerHTML=charts.map((s,i)=>songMarkup(s,String(i+1))).join('');$('grade-conditions').classList.remove('hidden');$('score-panel').classList.remove('hidden');$('verdict').innerHTML='';renderConditions();$('score-rows').innerHTML=charts.map((s,i)=>`<div class="line"></div><div class="resulthead"><strong>${i+1}曲目　${escapeHtml(s.title)}（${escapeHtml(s.chart)}）</strong><span class="pill">${s.notes||'ノーツ未登録'}</span></div><div class="results">${[['良','good'],['可','ok'],['不可','miss'],['連打','roll']].map(([label,id])=>`<div class="field"><label for="${id}-${i}">${label}</label><input inputmode="numeric" type="number" min="0" id="${id}-${i}" placeholder="0" aria-label="${i+1}曲目 ${label}"></div>`).join('')}</div>`).join('');};
+
+$('judge').onclick=()=>{if(!run)return;const sums={good:0,ok:0,miss:0,roll:0};let incomplete=false,notesError=[];run.charts.forEach((s,i)=>{let n={};for(const key of Object.keys(sums)){let raw=$(`${key}-${i}`).value;if(!/^\d+$/.test(raw.trim()))incomplete=true;else{n[key]=Number(raw);sums[key]+=n[key];}}if(s.notes&&Object.hasOwn(n,'good')&&Object.hasOwn(n,'ok')&&Object.hasOwn(n,'miss')&&n.good+n.ok+n.miss!==s.notes){notesError.push(`${i+1}曲目（${s.notes}ノーツ）`);}});if(incomplete){$('verdict').innerHTML='<div class="verdict">全項目を0以上の整数で入力してください。</div>';return;}if(notesError.length){$('verdict').innerHTML=`<div class="verdict">${notesError.join('・')}の良＋可＋不可が最大コンボ数と一致しません。</div>`;return;}const c=run.condition,total=sums.good+sums.ok+sums.miss;const goodPass=c.goodRate===null?true:(c.goodCount!==null?sums.good>=c.goodCount:total>0&&sums.good/total>=c.goodRate);const checks=[...(c.goodRate===null?[]:[['良',goodPass]]),['可',sums.ok<=c.okMax],['不可',sums.miss<=c.missMax],...(c.rollMin!==null?[['連打',sums.roll>=c.rollMin]]:[])];const passed=checks.every(x=>x[1]);$('verdict').innerHTML=`<div class="verdict ${passed?'pass':'fail'}">${passed?'🎉 合格！':'💥 不合格'}<div style="font-size:12px;margin-top:7px;font-weight:500">${checks.map(([label,v])=>`${label} ${v?'✓':'×'}`).join('　')}</div></div>`;};
+function validSong(s){return s&&typeof s.title==='string'&&s.title.trim().length>0&&['表','裏'].includes(s.chart)&&[1,2,3,4,5].includes(Number(s.tier))&&(!Object.hasOwn(s,'notes')||(Number.isInteger(s.notes)&&s.notes>0))&&(!Object.hasOwn(s,'rollSeconds')||(typeof s.rollSeconds==='number'&&s.rollSeconds>=0))&&(!Object.hasOwn(s,'overtake')||typeof s.overtake==='boolean');}
 function setSongs(a,status){songs=a.map((s,i)=>({...s,tier:Number(s.tier),id:s.id||`file-${i}`}));$('data-count').textContent=`${songs.length}譜面`; $('data-status').textContent=status;$('single-output').className='empty';$('single-output').textContent='まだ抽選していません';$('dan-output').className='empty';$('dan-output').textContent='段位を選んで抽選してください';$('grade-conditions').classList.add('hidden');$('score-panel').classList.add('hidden');run=null;}
-$('import-btn').onclick=()=>$('file').click();$('file').onchange=async e=>{const f=e.target.files[0];if(!f)return;try{const o=JSON.parse(await f.text());if(!Array.isArray(o)||!o.length||!o.every(validSong))throw Error('曲名・表裏・tierの形式を確認してください。');const keys=new Set();for(const s of o){const key=`${s.title}::${s.chart}`;if(keys.has(key))throw Error(`重複譜面があります：${key}`);keys.add(key);}setSongs(o,`${f.name} を読み込みました。現行収録確認済みのデータを利用してください。`);}catch(err){alert(`読み込み失敗：${err.message}`);}e.target.value='';};
+$('import-btn').onclick=()=>$('file').click();$('file').onchange=async e=>{const f=e.target.files[0];if(!f)return;try{const o=JSON.parse(await f.text());if(!Array.isArray(o)||!o.length||!o.every(validSong))throw Error('曲名・表裏・tier・overtakeの形式を確認してください。');if(o.some(s=>Number(s.tier)===5&&typeof s.overtake!=='boolean'))throw Error('Lv5譜面には追い越し判定（overtake:true/false）が必須です。');const keys=new Set();for(const s of o){const key=`${s.title}::${s.chart}`;if(keys.has(key))throw Error(`重複譜面があります：${key}`);keys.add(key);}setSongs(o,`${f.name} を読み込みました。現行収録確認済みのデータを利用してください。`);}catch(err){alert(`読み込み失敗：${err.message}`);}e.target.value='';};
 $('reset-data').onclick=()=>setSongs(sample,'サンプルデータで動作確認中です。');
 setSongs(sample,'サンプルデータで動作確認中です。');
 $('preview-warning').classList.add('hidden');
